@@ -18,9 +18,10 @@ the big map to disk **and very** efficiently load it **and/or** B) have **many**
 queries to amortize build costs over.  Rebuilding is lame while "real" DB query
 latency is hostile.  So, this module does an efficient external file format with
 five files to "mmap & go":
-
-    A .tabl pointing to (keyIx->varlen.keys, .sugg=varlen[array[CNo]]) and a
-    .meta(ix,cnt) file pointing to varlen .corp.
+```
+A .tabl pointing to (keyIx->varlen.keys, .sugg=varlen[array[CNo]])
+and a .meta(ix,cnt) file pointing to varlen .corp.
+```
 
 varlen[arr[CNo]] is an typical allocation arena with early entries the heads of
 per-listSz free lists.
