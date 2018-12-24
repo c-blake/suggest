@@ -22,9 +22,8 @@ five files to "mmap & go":
 A .tabl pointing to (keyIx->varlen.keys, .sugg=varlen[array[CNo]])
 and a .meta(ix,cnt) file pointing to varlen .corp.
 ```
-
-varlen[arr[CNo]] is an typical allocation arena with early entries the heads of
-per-listSz free lists.
+`varlen[arr[CNo]]` is an typical allocation arena with early entries the heads
+of per-list-size free lists.
 
 I originally wrote this to understand and perhaps debunk SymSpell, though the
 work has (sort of) validated it.  Or not.  Let you, dear reader, are the judge.
