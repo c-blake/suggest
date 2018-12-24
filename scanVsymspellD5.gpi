@@ -1,0 +1,14 @@
+#!/usr/bin/gnuplot
+set term png small size 1080,1080
+set output "scanVsymspellD5.png"
+set style data yerrorlines
+set title '4k Pages; Distance 5'
+set xlab 'Dict Size'
+set ylab 'ms for 5-matches for 6-batch of delete-1 typos'
+set grid
+set xtics 10000
+set ytics 0.05
+set xrange [5000:85000]
+set yrange [0:*]
+plot 'data/4k-d5' u 2:4:6   t 'LinearScan'   , \
+     'data/4k-d5' u 8:10:12 t 'SymSpellQuery'

@@ -1,0 +1,22 @@
+#!/usr/bin/gnuplot
+set term png small size 1080,1080
+set output "4kVs2M.png"
+set style data yerrorlines
+set title '4k vs 2M Pages; Max Distances 1-5'
+set xlab 'Dict Size'
+set ylab 'ms for 5-matches for 6-batch of delete-1 typos'
+set grid
+set xtics 10000
+set ytics 0.01
+set xrange [5000:85000]
+set yrange [0:0.301]
+plot 'data/4k-d1' u 8:10:12 t 'SSQ4k-D1' , \
+     'data/2M-d1' u 8:10:12 t 'SSQ2M-D1' , \
+     'data/4k-d2' u 8:10:12 t 'SSQ4k-D2' , \
+     'data/2M-d2' u 8:10:12 t 'SSQ2M-D2' , \
+     'data/4k-d3' u 8:10:12 t 'SSQ4k-D3' , \
+     'data/2M-d3' u 8:10:12 t 'SSQ2M-D3' , \
+     'data/4k-d4' u 8:10:12 t 'SSQ4k-D4' , \
+     'data/2M-d4' u 8:10:12 t 'SSQ2M-D4' , \
+     'data/4k-d5' u 8:10:12 t 'SSQ4k-D5' , \
+     'data/2M-d5' u 8:10:12 t 'SSQ2M-D5'
