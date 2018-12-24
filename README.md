@@ -1,12 +1,12 @@
-A from-scratch implementation in Nim of Wolf Garbe's Symmetric Delete Algorithm
-for correct spelling suggestions.  The basic idea is simple: corpus words within
-edit distance N of a query can only be *at most* N units longer or N units
-shorter and the shorter must be derived from deletes of longer strings.  So,
-build a map from all shortenings to all corpus words which generate them.  When
-queried with a string, we can then lookup all possible edits lengthening the
-query into a corpus word.  We also on-the-fly compute all shortenings of a query
-(& shortenings of lengthenings).  From both sets, we filter "maybe within N
-edits of a corpus word" to "actually within N edits".  The filter can be any
+This is a from-scratch implementation in Nim of Wolf Garbe's Symmetric Delete
+Algorithm for correct spelling suggestions.  The basic idea is simple: corpus
+words within edit distance N of a query can only be *at most* N units longer or
+N units shorter and the shorter must be derived from deletes of longer strings.
+So, build a map from all shortenings to all corpus words which generate them.
+When queried with a string, we can then lookup all possible edits lengthening
+the query into a corpus word.  We also on-the-fly compute all shortenings of a
+query (& shortenings of lengthenings).  From both sets, we filter "maybe within
+N edits of a corpus word" to "actually within N edits".  The filter can be any
 "distance" successfully bounded by N-indels.  This idea is like Monte Carlo
 numerical integration of shapes within easy bounding boxes (but this is
 deterministic & points which pass are reported, not just counted).
@@ -31,7 +31,7 @@ I think that I have at least found information I didn't see elsewhere that
 brackets its applicability which is worth letting people know about.  In
 particular, SymSpell offers only modest speed-up vs-linear scan at large
 (4,5,..) edit distances of a medium- sized (40 kWord) corpus, as shown in ![this
-plot.](https://raw.githubusercontent.com/c-blake/suggest/XXX/scanVsymspellD5.png)
+plot.](https://raw.githubusercontent.com/c-blake/suggest/master/scanVsymspellD5.png)
 This does roughly contradicts Garbe's sales pitch comparing it to straw-men,
 though false positive rates for d>3 probably makes that regime uninteresting.
 
@@ -48,7 +48,7 @@ distribution is wide with 95th percentile times often 4X the 5th percentile.
 
 You can see the general scaling of SymSpell costs with max distance and
 vocabulary size from ![this
-plot.](https://raw.githubusercontent.com/c-blake/suggest/XXX/scanVsymspell4k.png)
+plot.](https://raw.githubusercontent.com/c-blake/suggest/master/scanVsymspell4k.png)
 
 Along the way, I also found that SymSpell is a pretty good stress test for a
 some system-layer functionality - in particular memory allocators, string hash
@@ -89,7 +89,7 @@ size and access pattern of queries is particularly hostile to TLB use from a
 fresh mmap.  For larger dictionaries and distances <=~ 3, using 2M so-called
 "huge TLB" pages resulted in >2x speed-ups for a "fresh mapping", as can be seen
 in ![this
-graph](https://raw.githubusercontent.com/c-blake/suggest/XXX/4kVs2M.png)
+graph](https://raw.githubusercontent.com/c-blake/suggest/master/4kVs2M.png)
 
 That relative speed-up of large pages does owe to the small absolute time
 SymSpell queries take, of course.
