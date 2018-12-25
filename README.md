@@ -36,7 +36,7 @@ This does roughly contradict Garbe's "large distance, large dictionary" sales
 pitch.  False positive rates for d>3 probably makes that regime uninteresting.
 Still, SymSpell benefit remains only 7.3x-ish for 80 kWord @d=3 which is not
 great.  Indeed, parallel storage/processing optimizations on both linear scan
-and symspell querying might even nullify such a small advantage.
+and SymSpell querying might even nullify such a small advantage.
 
 The basic experimental set up is to use "frequency\_dictionary\_en\_82\_765.txt"
 from the SymSpell repository as our input.  We create synthetic "batches of
@@ -49,7 +49,7 @@ rates probably vary a lot.  The script is provided for users wanting to study
 how things vary.  The error bars are the standard deviation of the mean.  The
 distribution is wide with 95th percentile times often 4X the 5th percentile.
 
-Both linear scanning and symspell querying have an additional optimization of
+Both linear scanning and SymSpell querying have an additional optimization of
 shrinking the max distance passed to optimized edit distance calculators once
 "enough" correct suggestions have been found at lesser distances.  This can
 speed up such distance computations somewhat, especially for linear scans of
@@ -88,13 +88,13 @@ The memory allocator problem comes from a long-tailed distribution of how many
 "correct suggestions" any given typo has.  The distribution shape defeats most
 attempts to "speed-up" memory allocators with, say, "power of two" spaced region
 sizes.  Almost any spacing besides the minimal one results in very low space
-utilization by suggestion lists.  Thankfully, minimal spacing is fast enough.
-Indeed, an early non-persistent version of the code blew up most GCs Nim offers.
-Only the Boehm-Demers-Weiser garbage collector actually allowing completion of a
-table build in reasonable time.
+utilization by suggestion lists.  Indeed, an early non-persistent version of the
+code blew up most GCs Nim offers.  Only the Boehm-Demers-Weiser garbage
+collector actually allowing completion of a table build in reasonable time.
+Thankfully, minimal spacing is fast enough and we get 70% utilization or so.
 
 Finally, while 4096 byte virtual memory pages are rarely a performance obstacle,
-the size and access pattern of symspell queries is particularly hostile to use
+the size and access pattern of SymSpell queries is particularly hostile to use
 from a fresh mmap.  For larger dictionaries and distances <=~ 3, using 2M pages
 so-called "huge TLB" pages resulted in >2x speed-ups for a "fresh mapping", as
 can be seen in ![this
