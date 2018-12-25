@@ -160,22 +160,29 @@ typos and measuring we get
 graph](https://raw.githubusercontent.com/c-blake/suggest/master/randAcc.png)
 We see that for the fairly relevant d=3, 5% of the time there are 1138 accesses
 at 1138\*10ms = 11.4 seconds each, roughly 1000x the 17.5 ms of a cold-cache
-linear scan.  
+linear scan.
 
+I realize this estimate isn't perfect.  It assumes after 188 distinct words
+you've paged in all 188 .corp and .meta pages and that every .corp lookup
+results in a .meta lookup neither of which are true, but sine we do a min
+the error is at most 2\*188=376 while the tail is much heavier than that.
 One could, of course, drop caches in the loop and do a real benchmark on a
 Winchester drive.  Such a benchmark would take quite a while to run.  For d=4,
 the unluckiest typo in 10,000 takes a whopping 5 minutes.  The total over all
 10,000 d=4 estimates is 5,914,707 which would take around 60,000 seconds which
-is 3/4 of a day.
+is 3/4 of a day.  Given the small size of the max error relative to the effect,
+it seems unlikely to be more than a minor adjustment to primary conclusions.
+
+In terms of "more real" benchmarks, this access pattern is also why 2M pages
+improve so much upon 4k pages as shown above.  In-core page fault handling is
+just much faster that our running 10ms estimate on storage latency and so not
+as catastrophic.
 
 Multiple words also do not share well the random aspects of SymSpell IO.  For
 the first batch of 6 off a cold cache over a minute is conceivable.  Indeed,
 if multiple words are expected, the wisest IO strategy would be to get the whole
 data set paged into RAM via streaming IO (only 1.75 sec for the d=3 case @100
-MB/s) and then run the queries.  In terms of "more real" benchmarks, this access
-pattern is also why 2M pages improve so much upon 4k pages as shown above, but
-the time delta between Winchester and RAM is much larger than a the mere
-2048/4=512x of 2M vs 4k pages.
+MB/s) and then run the queries.
 
 This cold-cache scenario is yet another "system layer performance fragility" of
 SymSpell.  Notice that linear scan's order 10s of ms cold-cache can now be 1000x
@@ -192,7 +199,7 @@ Also, SymSpell's large memory requirements make it likely one of the fiercer
 memory competitors.  There are of course system facilities to help with this
 problem such as `mlock` and `MAP_LOCKED` and such (also a bit easier to use
 with persistent files than volatile "language runtime" data structures), if
-the developer thinks to use them. [ They may also require CAP_IPC_LOCK or
+the developer thinks to use them. [ They may also require `CAP_IPC_LOCK` or
 superuser priviliges. ]
 
 The TL;DR?  While a well-implemented SymSpell can indeed be faster than a
