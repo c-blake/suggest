@@ -79,7 +79,7 @@ The memory allocator problem comes from a long-tailed distribution of how many
 attempts to "speed-up" memory allocators with, say, "power of two" spaced region
 sizes.  Almost any spacing besides the minimal one results in very low space
 utilization by suggestion lists.  Thankfully, minimal spacing is fast enough.
-Indeed, an early non-persistent version of this code blew up most GCs Nim has.
+Indeed, an early non-persistent version of the code blew up most GCs Nim offers.
 Only the Boehm-Demers-Weiser garbage collector actually allowing completion of a
 table build in reasonable time.
 
