@@ -169,7 +169,7 @@ Competition for memory may be beyond a developers control, and pre-paging
 non-persistent data can be much harder than "cat spell.\* > /dev/null".
 Also, SymSpell's large memory requirements make it likely one of the fiercer
 memory competitors.  There are of course system facilities to help with this
-problem such as `mlock` and `MAP\_LOCKED` and such (also a bit easier to use
+problem such as `mlock` and `MAP_LOCKED` and such (also a bit easier to use
 with persistent files), if the developer thinks to use them.
 
 The TL;DR?  While a well-implemented SymSpell can indeed be faster than a
