@@ -3,7 +3,7 @@ set term png small size 2160,1080
 set output "randAcc.png"
 set style data steps
 set title 'Random Access Analysis'
-set xlab 'Lower Bound On Random Accesses'
+set xlab 'Estimate Of Num Random Accesses'
 set ylab 'Cumulative Percentage'
 set ytics 5
 set grid
