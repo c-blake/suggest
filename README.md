@@ -150,8 +150,8 @@ share that IO as well, making amortized per-batch-of-6-typos more like 3 ms per
 word.  Meanwhile, just one cold-cache suggestion on freshly opened data files
 could take 1000s of random accesses or 10s of seconds (at 10 ms latencies).
 
-A reasonably tight estimate on the number of random accesses is 3*hash finds
-+ 2*min(distances, corp/4k = 188 for test file).  The 3 comes from access to the
+A reasonably tight estimate on the number of random accesses is 3*hashFinds +
+2*min(distances, corp/4k = 188 for test file).  The 3 comes from access to the
 .tabl, its .keys and then the .sugg list.  The 2 comes from access to the .corp
 and .meta file.  (In truth, .meta may not need consulting if the distances
 exceeds the user request, though.)  With that estimate and sampling 10,000
