@@ -34,9 +34,9 @@ particular, SymSpell offers only modest speed-up vs-linear scan at large
 plot.](https://raw.githubusercontent.com/c-blake/suggest/master/scanVsymspellD5.png)
 This does roughly contradict Garbe's "large distance, large dictionary" sales
 pitch.  False positive rates for d>3 probably makes that regime uninteresting.
-Still, SymSpell benefit remains only 3.5x-ish for 80 kWord which is not great.
-Indeed, multi-core storage/processing optimizations on both linear scan and
-symspell querying might even nullify such a small advantage.
+Still, SymSpell benefit remains only 7.3x-ish for 80 kWord @d=3 which is not
+great.  Indeed, parallel storage/processing optimizations on both linear scan
+and symspell querying might even nullify such a small advantage.
 
 The basic experimental set up is to use "frequency\_dictionary\_en\_82\_765.txt"
 from the SymSpell repository as our input.  We create synthetic "batches of
