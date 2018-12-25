@@ -52,13 +52,12 @@ plot.](https://raw.githubusercontent.com/c-blake/suggest/master/scanVsymspell4k.
 
 Along the way, I also found that SymSpell is a pretty good stress test for a
 some system-layer functionality - in particular memory allocators, string hash
-functions, and even virtual-to-physical translation caches (aka TLBs).  Indeed,
-unless you really need that last 10x-50x speed boost from 100s of microseconds
-to 10s of microseconds, it is likely not advisable to try to implement SymSpell
-(at least without the systems layer warnings in this README).  A simple linear
-scan of a corpus which has been pre-sorted by descending recommendation order is
-fast enough and very simple - you needn't even sort results.  You can simply bin
-them by edit distance.
+functions, and even virtual memory operation.  Indeed, unless you really need
+that last 10x-50x speed boost from 100s of microseconds to 10s of microseconds,
+it is likely not advisable to try to implement SymSpell (at least without the
+systems layer warnings in this README).  A simple linear scan of a corpus which
+has been pre-sorted by descending recommendation order is fast enough and very
+simple - you needn't even sort results.  You simply bin them by edit distance.
 
 For the curious about the systems layer problems, sensitivity to string hash
 functions is perhaps the most obvious.  Because each key in the main table is
@@ -84,15 +83,15 @@ Indeed, an early non-persistent version of this code blew up most GCs Nim has.
 Only the Boehm-Demers-Weiser garbage collector actually allowing completion of a
 table build in reasonable time.
 
-Finally, while 4096 byte virtual memory pages are usually fast enough, the table
-size and access pattern of queries is particularly hostile to TLB use from a
-fresh mmap.  For larger dictionaries and distances <=~ 3, using 2M so-called
-"huge TLB" pages resulted in >2x speed-ups for a "fresh mapping", as can be seen
-in ![this
+Finally, while 4096 byte virtual memory pages are rarely a performance obstacle,
+the size and access pattern of symspell queries is particularly hostile to use
+from a fresh mmap.  For larger dictionaries and distances <=~ 3, using 2M pages
+so-called "huge TLB" pages resulted in >2x speed-ups for a "fresh mapping", as
+can be seen in ![this
 graph](https://raw.githubusercontent.com/c-blake/suggest/master/4kVs2M.png)
-
 That relative speed-up of large pages does owe to the small absolute time
-SymSpell queries take, of course.
+SymSpell queries take, of course, but is still indicative of thousands of
+non-local 4k page accesses which will become relevant in later discussions.
 
 It also bears mentioning that table building time is still costly in this fairly
 optimized implementation.  When using a Linux tmpfs RAM filesystem the resource
@@ -108,7 +107,7 @@ maxLevD dt(sec) size(bytes) Misspells
 Those times could be sped up 1.2-1.3x by clairvoyantly pre-sizing the table to
 avoid hash table resizes.  Some reasonably precise formula for the number of
 delete misspellings for a given (corpus, distance) might be able to provide this
-modest speed-up systematically.  It is also very unlikely "less persistent"
+modest speed-up systematically.  It is also very unlikely that "less persistent"
 implementations can achieve build times much better.
 ```
 maxLevD dt(sec) size(bytes) Misspells
