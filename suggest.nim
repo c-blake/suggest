@@ -133,8 +133,10 @@ type
   ucArrCh* = ptr UncheckedArray[char]
 const szTabEnt = 12 #sizeof(TabEnt) #XXX =13 instead of same as C sizeof==12.
 
+var totDists = 0
 proc distance*[W](p: MyersPattern[W], t: ptr char, n: int,
                   maxDist: W, kind=osa): W {.inline.} =
+  inc(totDists)
   if kind == lev: p.levenshtein(toOpenArray(cast[ucArrCh](t), 0, n-1), maxDist)
   else        : p.optimStrAlign(toOpenArray(cast[ucArrCh](t), 0, n-1), maxDist)
 
@@ -168,7 +170,9 @@ proc toWord*(s: Suggestor; i: Ix): Word {.inline.} =
 
 proc mcmp(a,b: pointer; n: csize): cint {.importc:"memcmp",header:"<string.h>".}
 var cMax = 0
+var tabFinds = 0
 proc find*(s: Suggestor, w: Word): int =
+  inc(tabFinds)
   let mask = s.tabSz - 1                #Vanilla linear probe hash search/insert
   var i = hash(w.d) and mask            #Initial probe
   let n = int(w.n)                      #Length of query word
@@ -519,20 +523,32 @@ proc update*(prefix, input: string; dmax=2, size=32, verbose=false): int =
 proc query*(prefix: string, typos: seq[string], refr="",
             dmax=2, kind=osa, matches=6, verbose=false): int =
   ## Load Suggestor data from `prefix`.* & query suggestions for all `typos`.
+  let f00 = tabFinds
+  let d00 = totDists
   let t00 = epochTime()
   var s = suggest.open(prefix, refr=refr)   #NOTE: only var so can `.close`
   let dtOp = (epochTime() - t00) * 1e3
   var dtAll = 0.0
   for i in 0 ..< typos.len:
+    let f0 = tabFinds
+    let d0 = totDists
     let t0 = epochTime()
     let sugg = s.suggestions(typos[i], dmax, kind, matches)
     let dt = (epochTime() - t0) * 1e3
+    let df = tabFinds - f0
+    let dd = totDists - d0
     dtAll += dt
     stdout.write "  sugg for \"", typos[i], "\""
-    if verbose: stdout.write " in ", formatFloat(dt, ffDecimal, 4), " ms"
+    if verbose:
+      stdout.write " in ", formatFloat(dt, ffDecimal, 4), " ms ",
+                   df, " finds ", dd, " dists"
     if sugg.len > 0: stdout.write ":  ", sugg.join(" ")
     echo ""
-  if verbose: stdout.write formatFloat(dtOp, ffDecimal, 4), " ms to open; "
+  if verbose:
+    let dp0 = tabFinds - f00
+    let dd0 = totDists - d00
+    stdout.write formatFloat(dtOp, ffDecimal, 4), " ms to open; ",
+                 dp0, " totFind ", dd0, " totDist "
   echo formatFloat(dtAll/float(typos.len), ffDecimal, 4), " ms"
   s.close()
 
