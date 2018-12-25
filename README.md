@@ -32,8 +32,11 @@ brackets its applicability which is worth letting people know about.  In
 particular, SymSpell offers only modest speed-up vs-linear scan at large
 (4,5,..) edit distances of a medium- sized (40 kWord) corpus, as shown in ![this
 plot.](https://raw.githubusercontent.com/c-blake/suggest/master/scanVsymspellD5.png)
-This does roughly contradicts Garbe's sales pitch comparing it to straw-men,
-though false positive rates for d>3 probably makes that regime uninteresting.
+This does roughly contradict Garbe's "large distance, large dictionary" sales
+pitch.  False positive rates for d>3 probably makes that regime uninteresting.
+Still, SymSpell benefit remains only 3.5x-ish for 80 kWord which is not great.
+Indeed, multi-core storage/processing optimizations on both linear scan and
+symspell querying might even nullify such a small advantage.
 
 The basic experimental set up is to use "frequency\_dictionary\_en\_82\_765.txt"
 from the SymSpell repository as our input.  We create synthetic "batches of
@@ -41,10 +44,17 @@ typos" by sampling words from that very same distribution and then deleting one
 or more random characters.  Create 2000 synthetic batches and feed these into a
 'compare' mode of 'suggest' that times both a linear scan approach and an mmap &
 query SymSpell approach.  The averages should thus be pretty representative.
-Batch size of 6 typos per document/user interaction felt about right, but that
-probably varies a lot.  The script is provided for users wanting to study how
-things vary.  The error bars are the standard deviation of the mean.  The
+Batch size of 6 typos per document/user interaction felt about right, but typo
+rates probably vary a lot.  The script is provided for users wanting to study
+how things vary.  The error bars are the standard deviation of the mean.  The
 distribution is wide with 95th percentile times often 4X the 5th percentile.
+
+Both linear scanning and symspell querying have an additional optimization of
+shrinking the max distance passed to optimized edit distance calculators once
+"enough" correct suggestions have been found at lesser distances.  This can
+speed up such distance computations somewhat, especially for linear scans of
+short words near popular portions of word-space or when very few matches are
+requested.
 
 You can see the general scaling of SymSpell costs with max distance and
 vocabulary size from ![this
