@@ -147,49 +147,34 @@ Winchester drive or network storage unit would probably be approximately
 10 + 1e-5\*750e3 or about 17.5 ms, generally half the time of a single frame
 of a typical video file.  Getting suggestions for multiple words can easily
 share that IO as well, making amortized per-batch-of-6-typos more like 3 ms per
-word.  Meanwhile, just one cold-cache suggestion on freshly opened data files
-could take 1000s of random accesses or 10s of seconds (at 10 ms latencies).
+word.  Meanwhile, just one cold-cache suggestion query on freshly opened data
+files could take 100s of random accesses or seconds (at 10 ms latencies).
 
-A reasonably tight estimate on the number of random accesses is 3\*hashFinds +
-2\*min(distances, corp/4k = 188 for test file).  The 3 comes from access to the
-.tabl, its .keys and then the .sugg list.  The 2 comes from access to the .corp
-and .meta file.  (In truth, .meta may not need consulting if the distances
-exceeds the user request, though.)  With that estimate and sampling 10,000
-typos and measuring we get
-![this
+We can measure this time directly via `getrusage` instrumentation to measure
+minor page faults.  `suggest query2` does this.  In a cold cache scenario,
+these would all be major 10ms-ish faults with very little locality.  Results
+for a sample of 10,000 typos at various distances are ![this
 graph](https://raw.githubusercontent.com/c-blake/suggest/master/randAcc.png)
-We see that for the fairly relevant d=3, 5% of the time there are 1138 accesses
-at 1138\*10ms = 11.4 seconds each, roughly 1000x the 17.5 ms of a cold-cache
-linear scan.
+We see that for the fairly relevant d=3, 5% of the time there are 200+ accesses
+which would be 2 seconds at 10ms per access, over 100x the 17.5 ms of a
+cold-cache linear scan.  Running this benchmark against an actual 10ms-slow
+device would be quite slow.  This 10,000 sample case did 2870453 faults, which
+would be 287045 seconds which is 80 hours.  Even a 1000 sample case would take
+a good fraction of a day.
 
-I realize this estimate isn't perfect.  It assumes after 188 distinct words
-you've paged in all 188 .corp and .meta pages and that every .corp lookup
-results in a .meta lookup neither of which are true, but sine we do a min
-the error is at most 2\*188=376 while the tail is much heavier than that.
-One could, of course, drop caches in the loop and do a real benchmark on a
-Winchester drive.  Such a benchmark would take quite a while to run.  For d=4,
-the unluckiest typo in 10,000 takes a whopping 5 minutes.  The total over all
-10,000 d=4 estimates is 5,914,707 which would take around 60,000 seconds which
-is 3/4 of a day.  Given the small size of the max error relative to the effect,
-it seems unlikely to be more than a minor adjustment to primary conclusions.
-
-In terms of "more real" benchmarks, this access pattern is also why 2M pages
-improve so much upon 4k pages as shown above.  In-core page fault handling is
-just much faster that our running 10ms estimate on storage latency and so not
-as catastrophic.
-
-Multiple words also do not share well the random aspects of SymSpell IO.  For
-the first batch of 6 off a cold cache over a minute is conceivable.  Indeed,
-if multiple words are expected, the wisest IO strategy would be to get the whole
-data set paged into RAM via streaming IO (only 1.75 sec for the d=3 case @100
-MB/s) and then run the queries.
+While multiple words in a linear scan share IO perfectly, this is not the case
+for the random access pattern of SymSpell IO.  For the first batch of 6 off a
+cold cache, a very noticable fraction of a minute is conceivable for SymSpell
+and not very conceivable for a linear scan.  Indeed, if multiple words are
+expected, the wisest SymSpell IO strategy would be to get the whole data set
+paged into RAM via streaming IO (only 1.75 sec for the d=3 case @100 MB/s) and
+then run the queries.
 
 This cold-cache scenario is yet another "system layer performance fragility" of
-SymSpell.  Notice that linear scan's order 10s of ms cold-cache can now be 1000x
-faster than SymSpell's 10s of seconds.  Faster storage than 10 ms + 1e-5 ms/MB
-storage like SSDs and NVMe is, of course, becoming more common these days, but
-even so..to keep SymSpell a performance winner in deployment one wants to ensure
-cached pages.
+SymSpell.  Notice that linear scan's order 10s of ms cold-cache can now be 100x
+faster than SymSpell's seconds.  Faster storage than 10 ms + 1e-5 ms/MB storage
+like SSDs and NVMe is, of course, more common these days, but even so..to keep
+SymSpell a performance winner in deployment one wants to ensure cached pages.
 
 Of course, the above commentary also applies to *non-persistent* SymSpell
 implementations in execution environments where swap/page files are possible.
@@ -204,11 +189,11 @@ superuser priviliges. ]
 
 The TL;DR?  While a well-implemented SymSpell can indeed be faster than a
 similarly well-implemented linear scan, it is far more "performance risky".
-It could be 100x faster than a linear scan in some hot cache circumstances
-or 1000x slower in other cold-cache circumstances.  Meanwhile, a cold-cache
-linear scan might be only about 20x worse than a hot-cache linear scan.
-In those 100000x vs 20x terms, SymSpell is 5000x more performance risky than
-a linear scan.  All these risks can be addressed, but the developer needs
-to be mindful of them.
+It could be 10-100x faster than a linear scan in some hot cache circumstances
+or 10-100x slower in cold-cache circumstances.  Meanwhile, a cold-cache
+linear scan might be only about 20x worse than a hot-cache linear scan while
+for SymSpell cold vs hot could be 10000x different.  In those terms, SymSpell
+is 500x more performance risky than a linear scan.  All these risks can be
+addressed, but the developer needs to be mindful of them.
 
 The TL;DR;DR?  "YMMV from hell".  ;-)

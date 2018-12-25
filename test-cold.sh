@@ -23,7 +23,6 @@ cd $dir
 head -n $z $freqs > freqs
 suggest makeTypos -d$d -s10000 -n1 -p freqs
 suggest update -pp -d$1 -i freqs
-suggest query -pp -vd$1 -m$qm `cat typos.0`        | #-v ->instrumented
-  grep '^ '                                        | #Non-summary lines
-  awk '{ print 3*$7 + 2*(($9 < 188) ? $9 : 188) }' | #Estimate rand accesses
-  sort -n > ../randAcc.d$1                           #Sort and store
+suggest query2 -pp -d$1 -m$qm `cat typos.0` |
+  awk '{print $1}'                          |
+  sort -n > ../randAcc.d$1  

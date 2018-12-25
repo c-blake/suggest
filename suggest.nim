@@ -649,6 +649,29 @@ proc cpHuge*(paths: seq[string]) =
   src.close()
   dst.close()
 
+type Rusage* {.importc: "struct rusage", header: "<sys/resource.h>",
+              final, pure.} = object
+  ru_utime*, ru_stime*: Timeval
+  ru_maxrss*, ru_ixrss*, ru_idrss*, ru_isrss*, ru_minflt*, ru_majflt*, ru_nswap*,
+    ru_inblock*, ru_oublock*, ru_msgsnd*, ru_msgrcv*, ru_nsignals*, ru_nvcsw*,
+    ru_nivcsw*: clong
+
+proc getrusage*(who: cint, rusage: ptr Rusage): cint
+  {.importc, header: "<sys/resource.h>".}
+
+proc query2*(prefix: string, typos: seq[string], refr="",
+             dmax=2, kind=osa, matches=6): int =
+  ## Similar to `query` but per-typo open, close, and measure page faults.
+  var s: Suggestor
+  var r0, r1: Rusage
+  for i in 0 ..< typos.len:
+    s = suggest.open(prefix, refr=refr)
+    discard getrusage(0, addr r0)
+    let sugg = s.suggestions(typos[i], dmax, kind, matches)
+    discard getrusage(0, addr r1)
+    s.close()
+    echo r1.ru_minflt - r0.ru_minflt, " ", typos[i], ": ", sugg.join(" ")
+
 when isMainModule:
   import cligen
   dispatchMulti(
@@ -668,6 +691,7 @@ when isMainModule:
     [ suggest.makeTypos, cmdName = "makeTypos" ],
     [ suggest.compare, cmdName = "compare" ],
     [ suggest.cpHuge, cmdName = "cpHuge" ],
+    [ suggest.query2, cmdName = "query2" ],
     [ suggest.scan, cmdName = "scan", help = {
       "prefix"  : "path prefix for .keys, etc. data files",
       "dmax"    : "max distance of result from query",
