@@ -26,7 +26,7 @@ and a .meta(ix,cnt) file pointing to varlen .corp.
 of per-list-size free lists.
 
 I originally wrote this to understand and perhaps debunk SymSpell, though the
-work has (sort of) validated it.  Or not.  Let you, dear reader, are the judge.
+work has (sort of) validated it.  Or not.  Let you, dear reader, be the judge.
 I think that I have at least found information I didn't see elsewhere that
 brackets its applicability which is worth letting people know about.  In
 particular, SymSpell offers only modest speed-up vs-linear scan at large
