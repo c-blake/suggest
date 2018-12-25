@@ -170,7 +170,9 @@ non-persistent data can be much harder than "cat spell.\* > /dev/null".
 Also, SymSpell's large memory requirements make it likely one of the fiercer
 memory competitors.  There are of course system facilities to help with this
 problem such as `mlock` and `MAP_LOCKED` and such (also a bit easier to use
-with persistent files), if the developer thinks to use them.
+with persistent files than volatile "language runtime" data structures), if
+the developer thinks to use them. [ They may also require CAP_IPC_LOCK or
+superuser priviliges. ]
 
 The TL;DR?  While a well-implemented SymSpell can indeed be faster than a
 similarly well-implemented linear scan, it is far more "performance risky".
