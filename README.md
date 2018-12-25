@@ -172,9 +172,11 @@ then run the queries.
 
 This cold-cache scenario is yet another "system layer performance fragility" of
 SymSpell.  Notice that linear scan's order 10s of ms cold-cache can now be 100x
-faster than SymSpell's seconds.  Faster storage than 10 ms + 1e-5 ms/MB storage
-like SSDs and NVMe is, of course, more common these days, but even so..to keep
-SymSpell a performance winner in deployment one wants to ensure cached pages.
+faster than SymSpell's seconds.  Indeed the probability is order 50% that the
+first typo query will be 25x slower or worse than a linear scan as well as this
+time being user noticable.  Faster storage than 10 ms + 1e-5 ms/MB storage like
+SSDs and NVMe is more common these days, but even so..to keep SymSpell a
+performance winner in deployment, one wants to ensure cached pages.
 
 Of course, the above commentary also applies to *non-persistent* SymSpell
 implementations in execution environments where swap/page files are possible.
@@ -187,13 +189,14 @@ with persistent files than volatile "language runtime" data structures), if
 the developer thinks to use them. [ They may also require `CAP_IPC_LOCK` or
 superuser priviliges. ]
 
-The TL;DR?  While a well-implemented SymSpell can indeed be faster than a
-similarly well-implemented linear scan, it is far more "performance risky".
-It could be 10-100x faster than a linear scan in some hot cache circumstances
-or 10-100x slower in cold-cache circumstances.  Meanwhile, a cold-cache
-linear scan might be only about 20x worse than a hot-cache linear scan while
-for SymSpell cold vs hot could be 10000x different.  In those terms, SymSpell
-is 500x more performance risky than a linear scan.  All these risks can be
-addressed, but the developer needs to be mindful of them.
+The TL;DR?  While a well-implemented SymSpell with a well guarded deployment
+environment can indeed be always faster than a similarly well-implemented
+linear scan, without safeguards it is far more "performance risky" without
+a variety of cautions.  It may be 10-100x faster than a linear scan in some
+hot cache circumstances or 10-100x slower in cold-cache circumstances.
+Meanwhile, a cold-cache linear scan might be only about 20x worse than a
+hot-cache linear scan while for SymSpell cold vs hot could be 10000x different.
+In those terms, SymSpell is 500x more performance risky than a linear scan,
+not even considering things like hash function risk.
 
 The TL;DR;DR?  "YMMV from hell".  ;-)
