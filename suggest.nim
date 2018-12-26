@@ -639,7 +639,6 @@ proc compare*(prefix: string, dir: string, refr="",
     if verbose:
       for i, lst in ss: echo "  ", typos[i], ": ", lst.join(" ")
 
-import posix
 proc cpHuge*(paths: seq[string]) =
   ## copy $1 to $2 where $2 is potentially on a Linux hugetlbfs.
   var src = memfiles.open(paths[0])   #FS requires dst.size be a mult of 2M
@@ -649,9 +648,10 @@ proc cpHuge*(paths: seq[string]) =
   src.close()
   dst.close()
 
+import posix    # For TimeVal
 type Rusage* {.importc: "struct rusage", header: "<sys/resource.h>",
               final, pure.} = object
-  ru_utime*, ru_stime*: Timeval
+  ru_utime*, ru_stime*: TimeVal
   ru_maxrss*, ru_ixrss*, ru_idrss*, ru_isrss*, ru_minflt*, ru_majflt*, ru_nswap*,
     ru_inblock*, ru_oublock*, ru_msgsnd*, ru_msgrcv*, ru_nsignals*, ru_nvcsw*,
     ru_nivcsw*: clong
