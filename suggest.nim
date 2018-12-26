@@ -651,7 +651,7 @@ proc cpHuge*(paths: seq[string]) =
 when defined(Windows):
   proc query2*(): int =
     stderr.write "query2 not implemented for Windows"
-    return 1
+    return 1  #PR welcome someone wants to impl/test GetProcessMemoryInfo
 else:
   import posix    # For TimeVal
   type Rusage* {.importc: "struct rusage", header: "<sys/resource.h>",
