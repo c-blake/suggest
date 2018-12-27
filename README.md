@@ -192,12 +192,12 @@ superuser priviliges. ]
 
 The TL;DR?  While a well-implemented SymSpell with a well guarded deployment
 environment can indeed be always faster than a similarly well-implemented
-linear scan, without safeguards it is far more "performance risky" without
-a variety of cautions.  It may be 10-100x faster than a linear scan in some
-hot cache circumstances or 10-100x slower in cold-cache circumstances.
-Meanwhile, a cold-cache linear scan might be only about 20x worse than a
-hot-cache linear scan while for SymSpell cold vs hot could be 10000x different.
-In those terms, SymSpell is 500x more performance risky than a linear scan, not
-even considering things like allocator and hash function implementation risk.
+linear scan, it is far more "performance risky" without a variety of cautions.
+It may be 10-100x faster than a linear scan in some hot cache circumstances or
+10-100x slower in cold-cache circumstances.  Meanwhile, a cold-cache linear scan
+might be only about 20x worse than a hot-cache linear scan while for SymSpell
+cold vs hot could be 10000x different.  In those terms, SymSpell is 500x more
+performance risky than a linear scan, not even considering things like allocator
+and hash function implementation risk.
 
 The TL;DR;DR?  "YMMV from hell".  ;-)
