@@ -682,24 +682,21 @@ else:
 when isMainModule:
   import cligen
   dispatchMulti(
-    [ suggest.update, cmdName = "update", help = {
+    [ suggest.update, help = {
       "prefix"  : "path prefix for .keys, etc. data files",
       "input"   : "input corpus file of correct spellings",
       "dmax"    : "max possible distance for queries",
       "size"    : "table size guess",
       "verbose" : "print details about a build/update" } ],
-    [ suggest.query, cmdName = "query", help = {
+    [ suggest.query, help = {
       "prefix"  : "path prefix for .keys, etc. data files",
       "dmax"    : "max distance of result from query",
       "kind"    : "kind of distance (osa | lev)",
       "matches" : "max number of matches to print",
       "refr"    : "prefix to refernc files for file sizes",
       "verbose" : "print more details about the query" } ],
-    [ suggest.makeTypos, cmdName = "makeTypos" ],
-    [ suggest.compare, cmdName = "compare" ],
-    [ suggest.cpHuge, cmdName = "cpHuge" ],
-    [ suggest.query2, cmdName = "query2" ],
-    [ suggest.scan, cmdName = "scan", help = {
+    [ suggest.compare ], [ makeTypos ], [ cpHuge ], [ query2 ], #Benchmarking
+    [ suggest.scan, help = {
       "prefix"  : "path prefix for .keys, etc. data files",
       "dmax"    : "max distance of result from query",
       "kind"    : "kind of distance (osa | lev)",
