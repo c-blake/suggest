@@ -306,9 +306,9 @@ proc open*(path: string, mode=fmRead, maxDist=3, size=256, refr=""): Suggestor =
     if refr.len > 0: #HugeTLBfs support uses refr for size; ONLY for fmRead mode
       result.saved = [ result.tabf.size, result.keyf.size, result.sugf.size,
                        result.metf.size, result.corf.size ]
-      if size > 0:  result.tabf.size = getFileSize(refr & ".tabl").int
-      if size > 0:  result.keyf.size = getFileSize(refr & ".keys").int
-      if size > 0:  result.sugf.size = getFileSize(refr & ".sugg").int
+      if size > 0: result.tabf.size = getFileSize(refr & ".tabl").int
+      if size > 0: result.keyf.size = getFileSize(refr & ".keys").int
+      if size > 0: result.sugf.size = getFileSize(refr & ".sugg").int
       result.metf.size = getFileSize(refr & ".meta").int
       result.corf.size = getFileSize(refr & ".corp").int
   elif existsFile tablPath:                         #Open existing Read-Write
