@@ -100,67 +100,68 @@ so-called "huge TLB" pages resulted in >2x speed-ups for a "fresh mapping", as
 can be seen in ![this
 graph](https://raw.githubusercontent.com/c-blake/suggest/master/4kVs2M.png)
 That relative speed-up of large pages does owe to the small absolute time
-SymSpell queries take, of course, but is still indicative of thousands of
-non-local 4k page accesses which will become relevant in later discussions.
+SymSpell queries take, of course, but still indicates many non-local 4k page
+accesses (which will become relevant in later discussion).
 
 It also bears mentioning that table building time is still costly in this fairly
 optimized implementation.  When using a Linux tmpfs RAM filesystem the resource
 usage looks like this:
 ```
-maxLevD dt(sec) size(bytes) Misspells
-      1   0.182  19,456,529    647786
-      2   0.957  76,853,412   2562636
-      3   3.203 175,542,825   6852017
-      4   8.127 364,447,609  13981420
-      5  17.034 694,357,352  23487763
+maxDist dt(sec) size(bytes) Misspells
+   1      0.182  19,456,529    647786
+   2      0.957  76,853,412   2562636
+   3      3.203 175,542,825   6852017
+   4      8.127 364,447,609  13981420
+   5     17.034 694,357,352  23487763
 ```
 Those times could be sped up 1.2-1.3x by clairvoyantly pre-sizing the table to
 avoid hash table resizes.  Some reasonably precise formula for the number of
 delete misspellings for a given (corpus, distance) might be able to provide this
-modest speed-up systematically.  It is also very unlikely that "less persistent"
-implementations can achieve build times much better.
+modest speed-up systematically.  It is also unlikely that "less persistent"
+implementations can achieve much better build times.
 ```
-maxLevD dt(sec) size(bytes) Misspells
-      1   0.141  19,456,529    647786
-      2   0.710  76,853,412   2562636
-      3   2.589 175,542,825   6852017
-      4   6.654 364,447,609  13981420
-      5  13.891 694,357,352  23487763
+maxDist dt(sec) size(bytes) Misspells
+   1      0.141  19,456,529    647786
+   2      0.710  76,853,412   2562636
+   3      2.589 175,542,825   6852017
+   4      6.654 364,447,609  13981420
+   5     13.891 694,357,352  23487763
 ```
 Also Garbe claims significant space reduction for modest slow downs which should
 also help build times.  The main take-away though, is just making concrete my
 "long time and a lot of space" from the introductory paragraphs.  This puts real
 pressure on saving the answer of this build, especially for larger dictionaries
 with longer words.  One really does need thousands of future queries before the
-investment in build time pays off in query performance.
+investment in build time pays off in query performance.  This natural "save the
+answer" response then begs the question of cold-cache performance.
 
-In comparison, the corpus file alone is a mere 752,702 bytes and can be scanned
-in hundreds of microseconds off a modern NVMe storage even *fully cold-cache*.
-Cold-cache, non-RAM FS times for SymSpell, meanwhile degrade dramatically,
-especially on high latency storage like Winchester drives.  Every corrections
-query involves at least one, but sometimes hundreds or even thousands of random
-accesses to the `.tabl` file for weakly related keys.  Arranging for locality to
-such accesses seems quite challenging if not impossible.
+The corpus file alone is a mere 752,702 bytes and can be scanned in hundreds of
+microseconds off a modern NVMe storage *fully cold-cache*.  Cold-cache, non-RAM
+FS times for SymSpell, meanwhile degrade dramatically, especially on high
+latency storage like Winchester drives.  Every corrections query involves at
+least one, but sometimes hundreds or even in rarer cases thousands of random
+accesses to the `.tabl` file for weakly related keys.  Arranging for locality
+to such accesses seems challenging if not impossible.
 
 For example, Cold-cache scanning on a 10 ms + 1e-5 ms/MB (aka 10 ms, 100 MB/s)
 Winchester drive or network storage unit would probably be approximately
 10 + 1e-5\*750e3 or about 17.5 ms, generally half the time of a single frame
 of a typical video file.  Getting suggestions for multiple words can easily
-share that IO as well, making amortized per-batch-of-6-typos more like 3 ms per
-word.  Meanwhile, just one cold-cache suggestion query on freshly opened data
-files could take 100s of random accesses or seconds (at 10 ms latencies).
+share that IO as well, making amortized per-word time for batch-of-6-typos more
+like 3 ms.  Meanwhile, just one cold-cache SymSpell query on freshly opened data
+files could take 100s of random accesses or seconds (at 10 ms latency).
 
-We can measure this time directly via `getrusage` instrumentation to measure
+We can measure this cost directly via `getrusage` instrumentation to measure
 minor page faults.  `suggest query2` does this.  In a cold cache scenario,
-these would all be major 10ms-ish faults with very little locality.  Results
+these would all be major 10 ms-ish faults with very little locality.  Results
 for a sample of 10,000 typos at various distances are ![this
 graph](https://raw.githubusercontent.com/c-blake/suggest/master/randAcc.png)
 We see that for the fairly relevant d=3, 5% of the time there are 200+ accesses
-which would be 2 seconds at 10ms per access, over 100x the 17.5 ms of a
-cold-cache linear scan.  Running this benchmark against an actual 10ms-slow
-device would be quite slow.  This 10,000 sample case did 2870453 faults, which
-would be 287045 seconds which is 80 hours.  Even a 1000 sample case would take
-a good fraction of a day.
+and 1% of the time there are 373 accesses which translate to 2..4 seconds at 10
+ms / access, 100..200x the 17.5 ms of a cold-cache linear scan.  Running this
+measurment against an actual 10 ms-slow device would be quite slow.  This 10,000
+sample case did 2870453 faults, which would be 287045 seconds which is 80 hours.
+Even a 1000 sample case would take a good fraction of a day.
 
 While multiple words in a linear scan share IO perfectly, this is not the case
 for the random access pattern of SymSpell IO.  For the first batch of 6 off a
@@ -174,14 +175,14 @@ This cold-cache scenario is yet another "system layer performance fragility" of
 SymSpell.  Notice that linear scan's order 10s of ms cold-cache can now be 100x
 faster than SymSpell's seconds.  Indeed the probability is order 50% that the
 first typo query will be 25x slower or worse than a linear scan as well as this
-time being user noticable.  Faster storage than 10 ms + 1e-5 ms/MB storage like
-SSDs and NVMe is more common these days, but even so..to keep SymSpell a
-performance winner in deployment, one wants to ensure cached pages.
+time being in an end-user noticable regime.  Faster storage than 10 ms + 1e-5
+ms/MB storage like SSDs and NVMe is more common these days, but even so..to keep
+SymSpell a performance winner in deployment, one wants to ensure cached pages.
 
 Of course, the above commentary also applies to *non-persistent* SymSpell
 implementations in execution environments where swap/page files are possible.
 Competition for memory may be beyond a developers control, and pre-paging
-non-persistent data can be much harder than "cat spell.\* > /dev/null".
+non-persistent data can be more involved than "cat spell.\* > /dev/null".
 Also, SymSpell's large memory requirements make it likely one of the fiercer
 memory competitors.  There are of course system facilities to help with this
 problem such as `mlock` and `MAP_LOCKED` and such (also a bit easier to use
@@ -196,7 +197,7 @@ a variety of cautions.  It may be 10-100x faster than a linear scan in some
 hot cache circumstances or 10-100x slower in cold-cache circumstances.
 Meanwhile, a cold-cache linear scan might be only about 20x worse than a
 hot-cache linear scan while for SymSpell cold vs hot could be 10000x different.
-In those terms, SymSpell is 500x more performance risky than a linear scan,
-not even considering things like hash function risk.
+In those terms, SymSpell is 500x more performance risky than a linear scan, not
+even considering things like allocator and hash function implementation risk.
 
 The TL;DR;DR?  "YMMV from hell".  ;-)
