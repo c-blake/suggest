@@ -695,11 +695,11 @@ when isMainModule:
       "matches" : "max number of matches to print",
       "refr"    : "prefix to refernc files for file sizes",
       "verbose" : "print more details about the query" } ],
-    [ suggest.compare ], [ makeTypos ], [ cpHuge ], [ query2 ], #Benchmarking
     [ suggest.scan, help = {
       "prefix"  : "path prefix for .keys, etc. data files",
       "dmax"    : "max distance of result from query",
       "kind"    : "kind of distance (osa | lev)",
       "matches" : "max number of matches to print",
       "refr"    : "prefix to refernc files for file sizes",
-      "verbose" : "print more details about the query" } ])
+      "verbose" : "print more details about the query" } ],
+    [ suggest.compare ], [ makeTypos ], [ cpHuge ], [ query2 ]) #Benchmarking
