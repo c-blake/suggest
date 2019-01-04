@@ -129,7 +129,7 @@ type
     saved*: array[5, int]         ## HugeTLBfs on Linux rounds st_size.  So, we
                                   ##..get via refr, but munmap wants .saved.
   Results* = seq[seq[CNo]]        ## Per-distance-from-query seq[corpusIx]
-  DistanceKind* = enum lev, osa   ## Levenshtein, Optimal String Alignment
+  Distance* = enum lev, osa       ## Levenshtein, Optimal String Alignment
   ucArrCh* = ptr UncheckedArray[char] ## Abbrev for raw pointer->char[] cast[]s
 const szTabEnt = 12 #sizeof(TabEnt) #XXX =13 instead of same as C sizeof==12.
 
@@ -681,6 +681,7 @@ else:
 
 when isMainModule:
   import cligen
+  include cligen/mergeCfgEnv      #Needs very recent cligen
   dispatchMulti(
     [ suggest.update, help = {
       "prefix"  : "path prefix for .keys, etc. data files",
