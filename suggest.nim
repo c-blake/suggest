@@ -131,7 +131,7 @@ type
   Results* = seq[seq[CNo]]        ## Per-distance-from-query seq[corpusIx]
   Distance* = enum lev, osa       ## Levenshtein, Optimal String Alignment
   ucArrCh* = ptr UncheckedArray[char] ## Abbrev for raw pointer->char[] cast[]s
-const szTabEnt = 12 #sizeof(TabEnt) #XXX =13 instead of same as C sizeof==12.
+let szTabEnt = sizeof(TabEnt)     #Need Nim >=v0.19.9 to have this work
 
 var totDists = 0
 proc distance*[W](p: MyersPattern[W], t: ptr char, n: int,
@@ -501,7 +501,7 @@ proc suggestions*(s: Suggestor, wrd: string, maxDist: int=3, kind=osa,
   result = s.render(res, matches)
 
 proc update*(prefix, input: string; dmax=2, size=32, verbose=false): int =
-  ## Build/update input into Suggestor data files stored in `prefix`.* paths.
+  ## Build/update input into Suggestor data files in `prefix`.* paths.
   let f = memfiles.open input
   var s = suggest.open(prefix, fmReadWrite, dmax, size=size)
   var n = 0
@@ -522,7 +522,7 @@ proc update*(prefix, input: string; dmax=2, size=32, verbose=false): int =
 
 proc query*(prefix: string, typos: seq[string], refr="",
             dmax=2, kind=osa, matches=6, verbose=false): int =
-  ## Load Suggestor data from `prefix`.* & query suggestions for all `typos`.
+  ## Load Suggestor data from `prefix`.* & query suggestions for `typos`
   let f00 = tabFinds
   let d00 = totDists
   let t00 = epochTime()
@@ -590,8 +590,8 @@ proc scan*(prefix: string, typos: seq[string], refr="",
   s.close(small=true)
 
 proc makeTypos(path: string, size=6, n=10, deletes=1, outPrefix="typos.") =
-  ## Generate ``n` typo files ``outPrefix``* suitable for ``compare`` of size
-  ## ``size`` by sampling according to (word,freq) in ``path`` with ``deletes``.
+  ## Make ``n` typo files w/``size`` entries in ``outPrefix``* as input for
+  ## ``compare``. Sample via w,frq in ``path`` &do ``deletes`` dels.
   var words: seq[string]
   var tot = 0.0; var cdf: seq[float]
   for line in system.open(path).lines:
