@@ -59,7 +59,8 @@ proc levenshtein*[T,W](p: MyersPattern[W], t: openArray[T], maxDist: W): W =
 
 proc optimStrAlign*[T,W](p: MyersPattern[W], t: openArray[T], maxDist: W): W =
   ## Myers BitVec Algo after Hyyro 2003 Paper version with early len ck adapted
-  ## to optimStrAlign.
+  ## to optimStrAlign. (Hyyro calls it "Damerau", but it's NOT *unrestricted*
+  ## transposition Damerau1964 distance.   We call it "osa" to be more clear.)
   if p.m == 0: return t.len             #Degenerate case
   let m = p.m
   let n = t.len
