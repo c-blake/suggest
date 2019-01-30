@@ -604,7 +604,7 @@ proc makeTypos(path: string, size=6, n=10, deletes=1, outPrefix="typos.") =
     let o = system.open(outPrefix & $i, fmWrite)
     var z = 0
     while z < size:
-      var typo = words[cdf.upperBound(rand cdf[^1])]
+      var typo = words.sample cdf
       if typo.len <= deletes: continue    #Need strings > ``deletes`` long
       for d in 0 ..< deletes:
         let k = rand(typo.len - 1)
