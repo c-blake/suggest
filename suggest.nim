@@ -182,9 +182,13 @@ proc find*(s: Suggestor, w: Word): int =
     if te(i).keyN.int == n and mcmp(s.keyData(i.Ix), unsafeAddr w.d[0], n) == 0:
       return i                          #Len & *only* then bytes equal => Found
     i = (i + 1) and mask                #The linear part of linear probing
-  if c >= 64*10 and c > cMax:   #64 giant lg Sz; 10 giant statistical factor.
+  if c > cMax:                          #New worst case
     cMax = c                            #Print @new max to rate limit messages
-    stderr.write "weak hash function: ", c, " loops to find empty for ", w, "\n"
+    let logM = ln(float(mask + 1))      #See Pittel 1987,"..Probable Largest.."
+    let load = s.table[].len.float / float(mask + 1)
+    let x = int((logM - 2.5 * ln(logM)) / (load - 1 - ln(load)) + 0.5)
+    if c * 3 > 5 * x + 10:              #Lowers chatter for unconcerning cases
+      stderr.write "weak hash: ", c, " >> ", x, " loops to find empty (",w,")\n"
   return -i - 1                         #Not Found, return -(insertion point)-1
 
 proc tBytes*(nSlot: int): int {.inline.} = SuggTab.sizeof + nSlot * szTabEnt
