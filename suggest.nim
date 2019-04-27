@@ -187,7 +187,7 @@ proc find*(s: Suggestor, w: Word): int =
     let logM = ln(float(mask + 1))      #See Pittel 1987,"..Probable Largest.."
     let load = s.table[].len.float / float(mask + 1)
     let x = int((logM - 2.5 * ln(logM)) / (load - 1 - ln(load)) + 0.5)
-    if c * 3 > 5 * x + 10:              #Lowers chatter for unconcerning cases
+    if c * 3 > 5 * x + 12:              #Lowers chatter for unconcerning cases
       stderr.write "weak hash: ", c, " >> ", x, " loops to find empty (",w,")\n"
   return -i - 1                         #Not Found, return -(insertion point)-1
 
