@@ -623,7 +623,7 @@ proc suggVec*(s: Suggestor, typos: seq[string], dmax=2, kind=osa,
     result.add s.suggestions(typos[i], dmax, kind, matches)
 
 proc compare*(prefix: string, dir: string, refr="",
-              dmax=2, kind=osa, matches=6, verbose=false): int =
+              d_max=2, kind=osa, matches=6, verbose=false): int =
   ## A benchmarking call that works with makeTypos and test-suggest.sh.
   for pkind, path in dir.walkDir:
     var typos: seq[string]
