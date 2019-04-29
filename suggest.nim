@@ -399,10 +399,6 @@ proc addDeletes*(s: var Suggestor, word: Word, wd: CNo) =
   for d in adDels:                                #Add to the delete's sugg seq
     s.addSugg d, wd
 
-proc pop[T](s: var HashSet[T]): T {.inline.} = #Rm&Return 1st it-ord elt from s
-  for e in s: result = e; break
-  s.excl result
-
 proc add(s: var Suggestor, word: Word, freq: Count): CNo =
   let zMeta = s.nMeta.int * Meta.sizeof
   if zMeta + Meta.sizeof > s.metf.size:                 #Maybe grow .meta file
