@@ -642,7 +642,7 @@ proc compare*(prefix: string, dir: string, refr="",
       for i, lst in ss: echo "  ", typos[i], ": ", lst.join(" ")
 
 proc cpHuge*(paths: seq[string]) =
-  ## copy $1 to $2 where $2 is potentially on a Linux hugetlbfs.
+  ## cpy paths[0] to paths[1] when paths[1] may be on a Linux hugetlbfs.
   var src = memfiles.open paths[0]
   let rnd = (1 shl 21) - 1        #FS requires dst.size be a mult of 2M
   var dst = memfiles.open(paths[1], fmReadWrite,
