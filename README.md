@@ -152,7 +152,7 @@ like 3 ms.  Meanwhile, just one cold-cache SymSpell query on freshly opened data
 files could take 100s of random accesses or seconds (at 10 ms latency).
 
 We can measure this cost directly via `getrusage` instrumentation to measure
-minor page faults.  `suggest query2` does this.  In a cold cache scenario,
+minor page faults.  `suggest iquery` does this.  In a cold cache scenario,
 these would all be major 10 ms-ish faults with very little locality.  Results
 for a sample of 10,000 typos at various distances are ![this
 graph](https://raw.githubusercontent.com/c-blake/suggest/master/randAcc.png)

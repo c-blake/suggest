@@ -652,14 +652,14 @@ proc cpHuge*(paths: seq[string]) =
   dst.close
 
 when defined Windows:
-  proc query2*(): int =
-    stderr.write "query2 not implemented for Windows"
+  proc iquery*(): int =
+    stderr.write "iquery not implemented for Windows"
     return 1  #PR welcome someone wants to impl/test GetProcessMemoryInfo
 else:
   import posix
-  proc query2*(prefix: string, typos: seq[string], refr="",
+  proc iquery*(prefix: string, typos: seq[string], refr="",
                dmax=2, kind=osa, matches=6): int =
-    ## Similar to `query` but per-typo open, close, and measure page faults.
+    ## Like `query` but per-typo open, close, and page fault instrumented.
     var s: Suggestor
     var r0, r1: Rusage
     for i in 0 ..< typos.len:
@@ -694,4 +694,4 @@ when isMainModule:
       "matches" : "max number of matches to print",
       "refr"    : "prefix to refernc files for file sizes",
       "verbose" : "print more details about the query" } ],
-    [ suggest.compare ], [ makeTypos ], [ cpHuge ], [ query2 ]) #Benchmarking
+    [ suggest.compare ], [ makeTypos ], [ cpHuge ], [ iquery ]) #Benchmarking

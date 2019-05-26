@@ -23,6 +23,6 @@ cd $dir
 head -n $z $freqs > freqs
 suggest makeTypos -d$d -s10000 -n1 -p freqs
 suggest update -pp -d$1 -i freqs
-suggest query2 -pp -d$1 -m$qm `cat typos.0` |
+suggest iquery -pp -d$1 -m$qm `cat typos.0` |
   awk '{print $1}'                          |
   sort -n > ../randAcc.d$1  
