@@ -113,6 +113,8 @@ type
     cnt*: Count                   ## Fixed size statistics on the corpus word
   Metas* = UncheckedArray[Meta]   ## Meta data for corpus words
   Suggestor* = object
+    cMax*: int                    ## instrumentation: count max probe length
+    nFind*: int                   ## instrumentation: count table finds
     mode* : FileMode              ## Mode suggestor data files are in
     tabf* : MemFile               ## Backing store handle for table
     tabSz*: int                   ## Table size in TabEnt units; Calc from .size
@@ -169,10 +171,8 @@ proc toWord*(s: Suggestor; i: Ix): Word {.inline.} =
   copyMem result.d[0].addr, s.keyData(i), result.n
 
 proc mcmp(a,b: pointer; n: csize): cint {.importc:"memcmp",header:"<string.h>".}
-var cMax = 0
-var tabFinds = 0
-proc find*(s: Suggestor, w: Word): int =
-  inc tabFinds
+proc find*(s: var Suggestor, w: Word): int =
+  inc s.nFind
   let mask = s.tabSz - 1                #Vanilla linear probe hash search/insert
   var i = w.d.hash and mask             #Initial probe
   let n = w.n.int                       #Length of query word
@@ -182,8 +182,8 @@ proc find*(s: Suggestor, w: Word): int =
     if te(i).keyN.int == n and mcmp(s.keyData(i.Ix), unsafeAddr w.d[0], n) == 0:
       return i                          #Len & *only* then bytes equal => Found
     i = (i + 1) and mask                #The linear part of linear probing
-  if c > cMax:                          #New worst case
-    cMax = c                            #Print @new max to rate limit messages
+  if c > s.cMax:                        #New worst case
+    s.cMax = c                          #Print @new max to rate limit messages
     let logM = ln(float(mask + 1))      #See Pittel 1987,"..Probable Largest.."
     let load = s.table[].len.float / float(mask + 1)
     let x = int((logM - 2.5 * ln(logM)) / (load - 1 - ln(load)) + 0.5)
@@ -465,7 +465,7 @@ proc render*(s: Suggestor, rs: Results, matches: int): seq[string] =
     copyMem ss[0].addr, cw[1].addr, ss.len
     result[i] = ss
 
-proc suggestions*(s: Suggestor, wrd: string, maxDist: int=3, kind=osa,
+proc suggestions*(s: var Suggestor, wrd: string, maxDist: int=3, kind=osa,
                   matches=6): seq[string] =
   ## Return suggested corrections for maybe incorrect word `w`.  `maxDist` may
   ## be usefully less than the `maxDist` used to build Suggestor from a corpus.
@@ -524,30 +524,28 @@ proc update*(prefix, input: string; dmax=2, size=32, verbose=false): int =
 proc query*(prefix: string, typos: seq[string], refr="",
             dmax=2, kind=osa, matches=6, verbose=false): int =
   ## Load Suggestor data from `prefix`.* & query suggestions for `typos`
-  let f00 = tabFinds
-  let d00 = totDists
+  var dp0 = 0
+  var dd0 = 0
   let t00 = epochTime()
   var s = suggest.open(prefix, refr=refr)   #NOTE: only var so can `.close`
   let dtOp = (epochTime() - t00) * 1e3
   var dtAll = 0.0
   for i in 0 ..< typos.len:
-    let f0 = tabFinds
+    let f0 = s.nFind
     let d0 = totDists
     let t0 = epochTime()
     let sugg = s.suggestions(typos[i], dmax, kind, matches)
     let dt = (epochTime() - t0) * 1e3
-    let df = tabFinds - f0
-    let dd = totDists - d0
+    let df = s.nFind - f0 ; dp0 += df
+    let dd = totDists - d0; dd0 += dd
     dtAll += dt
     stdout.write "  sugg for \"", typos[i], "\""
     if verbose:
       stdout.write " in ", formatFloat(dt, ffDecimal, 4), " ms ",
-                   df, " finds ", dd, " dists"
+                   df, " s.nFind ", dd, " dists"
     if sugg.len > 0: stdout.write ":  ", sugg.join(" ")
     echo ""
   if verbose:
-    let dp0 = tabFinds - f00
-    let dd0 = totDists - d00
     stdout.write formatFloat(dtOp, ffDecimal, 4), " ms to open; ",
                  dp0, " totFind ", dd0, " totDist "
   echo formatFloat(dtAll/typos.len.float, ffDecimal, 4), " ms"
@@ -613,7 +611,7 @@ proc makeTypos(path: string, size=6, n=10, deletes=1, outPrefix="typos.") =
       inc z
     o.close
 
-proc suggVec*(s: Suggestor, typos: seq[string], dmax=2, kind=osa,
+proc suggVec*(s: var Suggestor, typos: seq[string], dmax=2, kind=osa,
               matches=6): seq[seq[string]] =
   for i in 0 ..< typos.len:
     result.add s.suggestions(typos[i], dmax, kind, matches)
