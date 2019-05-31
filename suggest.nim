@@ -671,7 +671,7 @@ else:
 when isMainModule:
   import cligen
   include cligen/mergeCfgEnv      #Needs very recent cligen
-  dispatchMulti(
+  dispatchMulti([ "multi", doc = "" ],
     [ suggest.update, help = {
       "prefix"  : "path prefix for .keys, etc. data files",
       "input"   : "input corpus file of correct spellings",
