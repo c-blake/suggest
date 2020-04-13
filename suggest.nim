@@ -179,7 +179,7 @@ proc find*(s: var Suggestor, w: Word): int =
   var c = 0
   while not te(i).empty:
     inc c
-    if te(i).keyN.int == n and mcmp(s.keyData(i.Ix), unsafeAddr w.d[0], n) == 0:
+    if te(i).keyN.int==n and mcmp(s.keyData(i.Ix),unsafeAddr w.d[0],n.csize)==0:
       return i                          #Len & *only* then bytes equal => Found
     i = (i + 1) and mask                #The linear part of linear probing
   if c > s.cMax:                        #New worst case
@@ -692,4 +692,5 @@ when isMainModule:
       "matches" : "max number of matches to print",
       "refr"    : "prefix to refernc files for file sizes",
       "verbose" : "print more details about the query" } ],
-    [ suggest.compare ], [ makeTypos ], [ cpHuge ], [ iquery ]) #Benchmarking
+    [ suggest.compare ], [ makeTypos ], [ iquery ], # A few for benchmarking
+    [ cpHuge, usage = "$command $args\n${doc}" ])
