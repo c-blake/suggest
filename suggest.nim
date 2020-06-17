@@ -589,7 +589,7 @@ proc scan*(prefix: string, typos: seq[string], refr="",
   s.close(small=true)
 
 proc makeTypos(path: string, size=6, n=10, deletes=1, outPrefix="typos.") =
-  ## Make ``n` typo files w/``size`` entries in ``outPrefix``* as input for
+  ## Make ``n`` typo files w/``size`` entries in ``outPrefix``* as input for
   ## ``compare``. Sample via w,frq in ``path`` &do ``deletes`` dels.
   var words: seq[string]
   var tot = 0.0; var cdf: seq[float]
