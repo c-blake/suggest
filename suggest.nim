@@ -502,7 +502,7 @@ proc suggestions*(s: var Suggestor, wrd: string, maxDist: int=3, kind=osa,
   result = s.render(res, matches)
 
 proc update*(prefix, input: string; dmax=2, size=32, verbose=false): int =
-  ## Build/update input into Suggestor data files in `prefix`.* paths.
+  ## Build/update input into Suggestor data files in `prefix`.\* paths.
   let f = memfiles.open input
   var s = suggest.open(prefix, fmReadWrite, dmax, size=size)
   var n = 0
@@ -523,7 +523,7 @@ proc update*(prefix, input: string; dmax=2, size=32, verbose=false): int =
 
 proc query*(prefix: string, typos: seq[string], refr="",
             dmax=2, kind=osa, matches=6, verbose=false): int =
-  ## Load Suggestor data from `prefix`.* & query suggestions for `typos`
+  ## Load Suggestor data from `prefix`.\* & query suggestions for `typos`
   var dp0 = 0
   var dd0 = 0
   let t00 = epochTime()
