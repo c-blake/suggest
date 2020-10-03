@@ -20,7 +20,7 @@
 ## and a .meta(ix,cnt) file pointing to varlen .corp.  varlen[arr[CNo]] is an
 ## allocation arena with early entries the heads of per-listSz free lists.
 
-import hashes,tables,sets, os, times, memfiles, strutils, algorithm, math,random
+import std/[hashes,tables,sets,os,times,memfiles,strutils,algorithm,math,random]
 type
   MyersPattern*[W] = object       ## Output of myersCompile(var Pattern[W],..)
     m: W                          ## Length of pattern string
