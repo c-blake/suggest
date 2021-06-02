@@ -21,6 +21,8 @@
 ## allocation arena with early entries the heads of per-listSz free lists.
 
 import std/[hashes,tables,sets,os,times,memfiles,strutils,algorithm,math,random]
+#NOTE: You are NOT intended to understand levenshtein/optimStrAlign here
+#      without reading the Hyyro 2003 bit-vector algorithm paper.
 type
   MyersPattern*[W] = object       ## Output of myersCompile(var Pattern[W],..)
     m: W                          ## Length of pattern string
@@ -34,8 +36,7 @@ proc myersCompile*[T,W](pat: openArray[T], dummy: W): MyersPattern[W] =
     result.pm[pat[i].int] = result.pm[pat[i].int] or (1 shl i)
 
 proc levenshtein*[T,W](p: MyersPattern[W], t: openArray[T], maxDist: W): W =
-  ## Myers BitVec Algo after Hyyro 2003 Paper version (hP..or 1) with an early
-  ## len check against maxDist.
+  ## Myers-Hyyro bit-vec algo (hP..or 1) with early len check against maxDist.
   if p.m == 0: return t.len             #Degenerate case
   let m = p.m
   let n = t.len
@@ -58,9 +59,9 @@ proc levenshtein*[T,W](p: MyersPattern[W], t: openArray[T], maxDist: W): W =
   return min(maxDist, d)
 
 proc optimStrAlign*[T,W](p: MyersPattern[W], t: openArray[T], maxDist: W): W =
-  ## Myers BitVec Algo after Hyyro 2003 Paper version with early len ck adapted
-  ## to optimStrAlign. (Hyyro calls it "Damerau", but it's NOT *unrestricted*
-  ## transposition Damerau1964 distance.   We call it "osa" to be more clear.)
+  ## Myers-Hyyro bit-vec with early len ck adapted to optimStrAlign. (Hyyro
+  ## calls it "Damerau", but it's NOT *unrestricted* transposition Damerau1964
+  ## distance.   We call it "osa" to be more clear.)
   if p.m == 0: return t.len             #Degenerate case
   let m = p.m
   let n = t.len
