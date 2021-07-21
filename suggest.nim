@@ -21,6 +21,7 @@
 ## allocation arena with early entries the heads of per-listSz free lists.
 
 import std/[hashes,tables,sets,os,times,memfiles,strutils,algorithm,math,random]
+import system/ansi_c
 #NOTE: You are NOT intended to understand levenshtein/optimStrAlign here
 #      without reading the Hyyro 2003 bit-vector algorithm paper.
 type
@@ -95,21 +96,21 @@ type
   Word* = object
     n*: uint8
     d*: array[WHI, char]          ## Bounded array of *up to* WHI chars
-  TabEnt* = object {.packed.}     ## Size=13 (should be corp:1 => 12; Nim bug?)
+  TabEnt* {.packed.} = object     ## Size=13 (should be corp:1 => 12; Nim bug?)
     keyI*: Ix                     ## Possible typo -> suggestion list
     keyN* {.bitsize:  8.}: uint8  ## typo len; (Could be hash w/len in .keys)
     corp* {.bitsize:  1.}: uint8  ## 1-bit flag indicating a real corpus word
     szIx* {.bitsize:  7.}: uint8  ## Index into `sizes` (alloc);
     len*  {.bitsize: 16.}: uint16 ## Length of sugg list (used)
     sugg*: Ix                     ## pointer into file of suggestions lists
-  SuggTab* = object {.packed.}    ## 32B header & table
+  SuggTab* {.packed.} = object    ## 32B header & table
     maxDist*: uint8               ## Within `maxDist` of corpus words
     unique* : CNo                 ## Track unique words add()d
     total*  : float64             ## Track all words add()d
     len*    : Ix                  ## Non-empty entries in table
     tab* : UncheckedArray[TabEnt] ## Hash structured; 12B per entry
   Suggs* = UncheckedArray[CNo]    ## Suggs Arena; 1st 16 are heads of free lists
-  Meta* = object {.packed.}
+  Meta* {.packed.} = object
     cix*: Ix                      ## Byte index into .corp for corpus word
     cnt*: Count                   ## Fixed size statistics on the corpus word
   Metas* = UncheckedArray[Meta]   ## Meta data for corpus words
@@ -171,7 +172,6 @@ proc toWord*(s: Suggestor; i: Ix): Word {.inline.} =
   result.n = te(i).keyN
   copyMem result.d[0].addr, s.keyData(i), result.n
 
-proc mcmp(a,b: pointer; n: csize): cint {.importc:"memcmp",header:"<string.h>".}
 proc find*(s: var Suggestor, w: Word): int =
   inc s.nFind
   let mask = s.tabSz - 1                #Vanilla linear probe hash search/insert
@@ -180,7 +180,8 @@ proc find*(s: var Suggestor, w: Word): int =
   var c = 0
   while not te(i).empty:
     inc c
-    if te(i).keyN.int==n and mcmp(s.keyData(i.Ix),unsafeAddr w.d[0],n.csize)==0:
+    if i.te.keyN.int == n and
+        cmemcmp(s.keyData(i.Ix), w.d[0].unsafeAddr, n.csize_t) == 0:
       return i                          #Len & *only* then bytes equal => Found
     i = (i + 1) and mask                #The linear part of linear probing
   if c > s.cMax:                        #New worst case
@@ -317,7 +318,7 @@ proc open*(path: string, mode=fmRead, maxDist=3, size=256, refr=""): Suggestor =
       if size > 0: result.sugf.size = getFileSize(refr & ".sugg").int
       result.metf.size = getFileSize(refr & ".meta").int
       result.corf.size = getFileSize(refr & ".corp").int
-  elif existsFile tablPath:                         #Open existing Read-Write
+  elif fileExists tablPath:                         #Open existing Read-Write
     result.tabf = mfop(tablPath, fmReadWrite, allowRemap=true)
     result.keyf = mfop(keysPath, fmReadWrite, allowRemap=true)
     result.sugf = mfop(suggPath, fmReadWrite, allowRemap=true)
@@ -381,8 +382,8 @@ proc hash(w: Word): int {.inline.} = toOpenArray(w.d, 0, w.n.int - 1).hash
 
 proc addDeletes*(s: var Suggestor, word: Word, wd: CNo) =
   ## Add strings with up to `maxDist` chars deleted from `word`.
-  var adDels   = initSet[Word](1 shl 6)             #Set of all deletions
-  var adQueue0 = initSet[Word](4)                   #For depth
+  var adDels   = initHashSet[Word](1 shl 6)         #Set of all deletions
+  var adQueue0 = initHashSet[Word](4)               #For depth
   var adQueue1 = adQueue0                           #For depth+1
   var q0 = adQueue0.addr
   var q1 = adQueue1.addr
@@ -472,10 +473,10 @@ proc suggestions*(s: var Suggestor, wrd: string, maxDist: int=3, kind=osa,
   ## be usefully less than the `maxDist` used to build Suggestor from a corpus.
   var maxDist = min(maxDist, s.table[].maxDist.int)
   var res: Results; res.setLen(maxDist + 1)
-  var added = initSet[CNo](32)
+  var added = initHashSet[CNo](32)
   let p = myersCompile(wrd, 0)                  #For fast distance calc
   let w = wrd.toWord
-  var queue = initSet[Word](32)
+  var queue = initHashSet[Word](32)
   queue.incl w                                  #First pop empties this
   while queue.len > 0:
     let q    = queue.pop                        #pop elt q from a set queue
