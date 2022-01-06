@@ -181,7 +181,7 @@ proc find*(s: var Suggestor, w: Word): int =
   while not te(i).empty:
     inc c
     if i.te.keyN.int == n and
-        cmemcmp(s.keyData(i.Ix), w.d[0].unsafeAddr, n.csize_t) == 0:
+        c_memcmp(s.keyData(i.Ix), w.d[0].unsafeAddr, n.csize_t) == 0:
       return i                          #Len & *only* then bytes equal => Found
     i = (i + 1) and mask                #The linear part of linear probing
   if c > s.cMax:                        #New worst case
@@ -619,7 +619,7 @@ proc suggVec*(s: var Suggestor, typos: seq[string], dmax=2, kind=osa,
     result.add s.suggestions(typos[i], dmax, kind, matches)
 
 proc compare*(prefix: string, dir: string, refr="",
-              d_max=2, kind=osa, matches=6, verbose=false): int =
+              dmax=2, kind=osa, matches=6, verbose=false): int =
   ## A benchmarking call that works with makeTypos and test-suggest.sh.
   for pkind, path in dir.walkDir:
     var typos: seq[string]
