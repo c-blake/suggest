@@ -503,7 +503,7 @@ proc suggestions*(s: var Suggestor, wrd: string, maxDist: int=3, kind=osa,
         queue.incl wDel
   result = s.render(res, matches)
 
-proc update*(prefix, input: string; dmax=2, size=32, verbose=false): int =
+proc update*(prefix, input: string; dmax=2, size=32, dlm=' ',verbose=false):int=
   ## Build/update input into Suggestor data files in `prefix`.\* paths.
   let f = memfiles.open input
   var s = suggest.open(prefix, fmReadWrite, dmax, size=size)
@@ -511,7 +511,7 @@ proc update*(prefix, input: string; dmax=2, size=32, verbose=false): int =
   if verbose: echo "Processing input: ", input
   let t0 = epochTime()
   for wordFreq in f.memSlices:
-    let cols = ($wordFreq).split()
+    let cols = split($wordFreq, dlm)
     if cols[0].len > WHI:                   #Count dropped over-long words
       inc n
       continue
