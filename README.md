@@ -76,7 +76,9 @@ This does roughly contradict Garbe's "large distance, large dictionary" sales
 pitch.  False positive rates for d>3 probably makes that regime uninteresting.
 Still, SymSpell benefit remains ***only 7.3x-ish for 80 kWord @d=3*** which is
 not great.  Indeed, **parallel** storage/processing optimizations on both linear
-scan and SymSpell querying **might even nullify** such a small advantage.
+scan and SymSpell querying **might even nullify** such a small advantage (the
+linear case has easily ensured work independence while SymSpell has plausibly
+high L3 cache competition.)
 
 ## Experimental Set Up and Basics
 
