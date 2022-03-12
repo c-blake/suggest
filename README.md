@@ -1,6 +1,7 @@
 # High Level Usage:
 
-Given a dictionary file with term frequency/probability like:```
+Given a dictionary file with term frequency/probability like:
+```
 the 23135851162
 of 13151942776
 and 12997637966
@@ -8,7 +9,8 @@ to 12136980858
 ...
 ```
 (or even just one column, such as the SOWPODS scrabble dictionary), you
-just "compile" a dictionary with:```
+just "compile" a dictionary with:
+```
 suggest update -d2 -iMY_DICT_FILE -p/tmp/p
 ```
 (suggest.update is also pretty simple if you want to write your own..) and
