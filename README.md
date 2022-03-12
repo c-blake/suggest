@@ -37,31 +37,41 @@ are also other notions in `cligen/textUt.distDamerau` and `hldiff/edits`.
 ## Architecture
 
 This is a from-scratch implementation in Nim of Wolf Garbe's Symmetric Delete
-Algorithm for correct spelling suggestions.  The basic idea is simple: corpus
-words within edit distance N of a query can only be *at most* N units longer or
-N units shorter and the shorter must be derived from deletes of longer strings.
-So, build a map from all shortenings to all corpus words which generate them.
-When queried with a string, we can then lookup all possible edits lengthening
-the query into a corpus word.  We also on-the-fly compute all shortenings of a
-query (& shortenings of lengthenings).  From both sets, we filter "maybe within
-N edits of a corpus word" to "actually within N edits".  The filter can be any
-"distance" successfully bounded by N-indels.  This idea is like Monte Carlo
-numerical integration of shapes within easy bounding boxes (but this is
-deterministic & points which pass are reported, not just counted).
+Algorithm for correct spelling suggestions.  It is identical, in essence, to
+Variation 1 of Mor & Fraenkel 1982 "A Hash Code Method for Detecting and
+Correcting Spelling Errors" (DOI 10.1145/358728.358752).
 
-While this does allow for fast queries, it takes takes a long time and a lot of
-space to make a lengthenings table compared to *thousands* of linear scans of a
-large-ish correct word corpus.  So, it is a useful strategy if you A) can save
-the big map to disk **and very** efficiently load it **and/or** B) have **many**
-queries to amortize build costs over.  Rebuilding is lame while "real" DB query
-latency is hostile.  So, this module does an efficient external file format with
-five files to "mmap & go":
+The basic idea is easy: corpus words within edit distance N of a query can only
+be *at most* N units longer or N units shorter and the shorter must be derived
+from deletes of longer strings.  So, build a map from all shortenings to all
+corpus words which generate them.  When queried with a string, we can then
+lookup all possible edits lengthening the query into a corpus word.  We also
+on-the-fly compute all shortenings of a query (& shortenings of lengthenings,
+though Mor & Fraenkel neglects mentioning this).  From the union of all sets,
+we filter "maybe within N edits of a corpus word" to "actually within N edits".
+The filter can be any "distance" successfully bounded by N-indels.
+
+If it helps your mental model/image, this idea is like Monte Carlo numerical
+integration of shapes within easy bounding boxes (but this is deterministic &
+points which pass are reported, not just counted) or importance sampling in
+statistics.
+
+While this can allow for fast queries, it takes takes a long time and a lot of
+space to make a lengthenings table - comparable to *thousands* of linear scans
+of a large-ish correct word corpus.  So, it is a useful strategy if you A) can
+save the big map to disk **and very** efficiently load it **and/or** B) have
+**many** queries to amortize build costs over.  Rebuilding is lame (though what
+almost every other SymSpell impl does) while "real" DB query latency is hostile.
+So, this module does an efficient external file format with five files to "mmap
+& go":
 ```
 A .tabl pointing to (keyIx->varlen.keys, .sugg=varlen[array[CNo]])
 and a .meta(ix,cnt) file pointing to varlen .corp.
 ```
 `varlen[arr[CNo]]` is an typical allocation arena with early entries the heads
-of per-list-size free lists.
+of per-list-size free lists.  The reason for 5 files not 1 is mostly just for
+dynamic updating convenience, letting the file system allocate/grow each file
+as needed.
 
 ## Background
 
@@ -70,15 +80,15 @@ work has (sort of) validated it.  Or not.  Let you, dear reader, be the judge.
 I think that I have at least found information I didn't see elsewhere that
 brackets its applicability which is worth letting people know about.  In
 particular, SymSpell offers only modest speed-up vs-linear scan at large
-(4,5,..) edit distances of a medium- sized (40 kWord) corpus, as shown in ![this
+(4,5,..) edit distances of a medium-sized (40 kWord) corpus, as shown in ![this
 plot.](https://raw.githubusercontent.com/c-blake/suggest/master/scanVsymspellD5.png)
 This does roughly contradict Garbe's "large distance, large dictionary" sales
-pitch.  False positive rates for d>3 probably makes that regime uninteresting.
-Still, SymSpell benefit remains ***only 7.3x-ish for 80 kWord @d=3*** which is
-not great.  Indeed, **parallel** storage/processing optimizations on both linear
-scan and SymSpell querying **might even nullify** such a small advantage (the
-linear case has easily ensured work independence while SymSpell has plausibly
-high L3 cache competition.)
+pitch.  False positive rates for d>3 probably makes that regime less interesting
+in natural language settings.  Still, SymSpell benefit remains ***only 7.3x-ish
+for 80 kWord @d=3*** which is not great.  Indeed, **parallel** storage &
+processing optimizations on both linear scan and SymSpell querying **might even
+nullify** such a small advantage (the linear case has easily ensured work
+independence while SymSpell has plausibly high L3 cache competition.)
 
 ## Experimental Set Up and Basics
 
