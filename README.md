@@ -34,6 +34,8 @@ are also other notions in `cligen/textUt.distDamerau` and `hldiff/edits`.
 
 # More Detailed Analysis:
 
+## Architecture
+
 This is a from-scratch implementation in Nim of Wolf Garbe's Symmetric Delete
 Algorithm for correct spelling suggestions.  The basic idea is simple: corpus
 words within edit distance N of a query can only be *at most* N units longer or
@@ -61,6 +63,8 @@ and a .meta(ix,cnt) file pointing to varlen .corp.
 `varlen[arr[CNo]]` is an typical allocation arena with early entries the heads
 of per-list-size free lists.
 
+## Background
+
 I originally wrote this to understand and perhaps debunk SymSpell, though the
 work has (sort of) validated it.  Or not.  Let you, dear reader, be the judge.
 I think that I have at least found information I didn't see elsewhere that
@@ -73,6 +77,8 @@ pitch.  False positive rates for d>3 probably makes that regime uninteresting.
 Still, SymSpell benefit remains only 7.3x-ish for 80 kWord @d=3 which is not
 great.  Indeed, parallel storage/processing optimizations on both linear scan
 and SymSpell querying might even nullify such a small advantage.
+
+## Experimental Set Up and Basics
 
 The basic experimental set up is to use "frequency\_dictionary\_en\_82\_765.txt"
 from the SymSpell repository as our input.  We create synthetic "batches of
@@ -95,6 +101,8 @@ requested.
 You can see the general scaling of SymSpell costs with max distance and
 vocabulary size from ![this
 plot.](https://raw.githubusercontent.com/c-blake/suggest/master/scanVsymspell4k.png)
+
+## System Layer Stress Test
 
 Along the way, I also found that SymSpell is a pretty good stress test for a
 some system-layer functionality - in particular memory allocators, string hash
@@ -125,7 +133,7 @@ The memory allocator problem comes from a long-tailed distribution of how many
 attempts to "speed-up" memory allocators with, say, "power of two" spaced region
 sizes.  Almost any spacing besides the minimal one results in very low space
 utilization by suggestion lists.  Indeed, an early non-persistent version of the
-code blew up most GCs Nim offers.  Only the Boehm-Demers-Weiser garbage
+code blew up most GCs that Nim offers.  Only the Boehm-Demers-Weiser garbage
 collector actually allowing completion of a table build in reasonable time.
 Thankfully, minimal spacing is fast enough and we get 70% utilization or so.
 
@@ -138,6 +146,8 @@ graph](https://raw.githubusercontent.com/c-blake/suggest/master/4kVs2M.png)
 That relative speed-up of large pages does owe to the small absolute time
 SymSpell queries take, of course, but still indicates many non-local 4k page
 accesses (which will become relevant in later discussion).
+
+# Build/Compile Time
 
 It also bears mentioning that table building time is still costly in this fairly
 optimized implementation.  When using a Linux tmpfs RAM filesystem the resource
@@ -170,6 +180,8 @@ pressure on saving the answer of this build, especially for larger dictionaries
 with longer words.  One really does need thousands of future queries before the
 investment in build time pays off in query performance.  This natural "save the
 answer" response then begs the question of cold-cache performance.
+
+## Hot vs. Cold Cache Performance; aka Average vs Worst Case
 
 The corpus file alone is a mere 752,702 bytes and can be scanned in hundreds of
 microseconds off a modern NVMe storage *fully cold-cache*.  Cold-cache, non-RAM
@@ -226,14 +238,16 @@ with persistent files than volatile "language runtime" data structures), if
 the developer thinks to use them. [ They may also require `CAP_IPC_LOCK` or
 superuser priviliges. ]
 
+## Conclusion
+
 The TL;DR?  While a well-implemented SymSpell with a well guarded deployment
 environment can indeed be always faster than a similarly well-implemented
 linear scan, it is far more "performance risky" without a variety of cautions.
 It may be 10-100x faster than a linear scan in some hot cache circumstances or
-10-100x slower in cold-cache circumstances.  Meanwhile, a cold-cache linear scan
-might be only about 20x worse than a hot-cache linear scan while for SymSpell
-cold vs hot could be 10000x different.  In those terms, SymSpell is 500x more
-performance risky than a linear scan, not even considering things like allocator
-and hash function implementation risk.
+10-100x slower in cold-cache/worst case circumstances.  Meanwhile, a cold-cache
+linear scan might be only about 20x worse than a hot-cache linear scan while for
+SymSpell cold vs hot could be 10000x different.  In those terms, SymSpell is
+500x more performance risky than a linear scan, not even considering things like
+allocator and hash function implementation risk.
 
 The TL;DR;DR?  "YMMV from hell".  ;-)
