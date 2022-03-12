@@ -74,9 +74,9 @@ particular, SymSpell offers only modest speed-up vs-linear scan at large
 plot.](https://raw.githubusercontent.com/c-blake/suggest/master/scanVsymspellD5.png)
 This does roughly contradict Garbe's "large distance, large dictionary" sales
 pitch.  False positive rates for d>3 probably makes that regime uninteresting.
-Still, SymSpell benefit remains only 7.3x-ish for 80 kWord @d=3 which is not
-great.  Indeed, parallel storage/processing optimizations on both linear scan
-and SymSpell querying might even nullify such a small advantage.
+Still, SymSpell benefit remains ***only 7.3x-ish for 80 kWord @d=3*** which is
+not great.  Indeed, **parallel** storage/processing optimizations on both linear
+scan and SymSpell querying **might even nullify** such a small advantage.
 
 ## Experimental Set Up and Basics
 
@@ -248,6 +248,6 @@ It may be 10-100x faster than a linear scan in some hot cache circumstances or
 linear scan might be only about 20x worse than a hot-cache linear scan while for
 SymSpell cold vs hot could be 10000x different.  In those terms, SymSpell is
 500x more performance risky than a linear scan, not even considering things like
-allocator and hash function implementation risk.
+allocator and hash function implementation risk and parallelization.
 
 The TL;DR;DR?  "YMMV from hell".  ;-)
