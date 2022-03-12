@@ -524,7 +524,7 @@ proc update*(prefix, input: string; dmax=2, size=32, dlm=' ',verbose=false):int=
   s.close verbose                           #Right-size files when done
 
 proc query*(prefix: string, typos: seq[string], refr="",
-            dmax=2, kind=osa, matches=6, verbose=false): int =
+            dmax=2, kind=osa, matches=6, verbose=false, n=1): int =
   ## Load Suggestor data from `prefix`.\* & query suggestions for `typos`
   var dp0 = 0
   var dd0 = 0
@@ -536,6 +536,7 @@ proc query*(prefix: string, typos: seq[string], refr="",
     let f0 = s.nFind
     let d0 = totDists
     let t0 = epochTime()
+    for reps in 1..n-1: discard s.suggestions(typos[i], dmax, kind, matches)
     let sugg = s.suggestions(typos[i], dmax, kind, matches)
     let dt = (epochTime() - t0) * 1e3
     let df = s.nFind - f0 ; dp0 += df
