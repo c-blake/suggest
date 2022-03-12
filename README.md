@@ -181,7 +181,7 @@ with longer words.  One really does need thousands of future queries before the
 investment in build time pays off in query performance.  This natural "save the
 answer" response then begs the question of cold-cache performance.
 
-## Hot vs. Cold Cache Performance; aka Average vs Worst Case
+## Hot vs. Cold Cache; aka Average vs Worst Case
 
 The corpus file alone is a mere 752,702 bytes and can be scanned in hundreds of
 microseconds off a modern NVMe storage *fully cold-cache*.  Cold-cache, non-RAM
