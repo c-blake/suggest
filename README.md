@@ -253,7 +253,7 @@ superuser priviliges. ]
 ## Conclusion
 
 The TL;DR?  While a well-implemented SymSpell with a well guarded deployment
-environment can indeed be always faster than a similarly well-implemented
+environment can indeed be always faster *on average* than a similarly well done
 linear scan, it is far more "performance risky" without a variety of cautions.
 It may be 10-100x faster than a linear scan in some hot cache circumstances or
 10-100x slower in cold-cache/worst case circumstances.  Meanwhile, a cold-cache
