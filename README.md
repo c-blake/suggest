@@ -149,7 +149,7 @@ That relative speed-up of large pages does owe to the small absolute time
 SymSpell queries take, of course, but still indicates many non-local 4k page
 accesses (which will become relevant in later discussion).
 
-# Build/Compile Time
+## Build/Compile Time
 
 It also bears mentioning that table building time is still costly in this fairly
 optimized implementation.  When using a Linux tmpfs RAM filesystem the resource
