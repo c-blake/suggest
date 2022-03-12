@@ -1,3 +1,37 @@
+# High Level Usage:
+
+Given a dictionary file with term frequency/probability like:```
+the 23135851162
+of 13151942776
+and 12997637966
+to 12136980858
+...
+```
+(or even just one column, such as the SOWPODS scrabble dictionary), you
+just "compile" a dictionary with:```
+suggest update -d2 -iMY_DICT_FILE -p/tmp/p
+```
+(suggest.update is also pretty simple if you want to write your own..) and
+then do something like `suggest q -p/tmp/p myMispelling anotherWord..` from
+the command-line.  From Nim code, it would look more like:
+```Nim
+import suggest
+proc maybe(prefix="/tmp/p", badWord="slugde", dmax=2,
+           kind=osa, matches=6): seq[string] =
+  var s = suggest.open(prefix)
+  result = s.suggestions(badWord, dmax, kind, matches)
+  s.close
+echo maybe() # @["sludge", "slide", ..]
+```
+In light of subsequent analysis, you may also just want to `import suggest`,
+scan a dictionary "however" & use `myersCompile, levenshtein|optimStrAlign`.
+That is likely "fast enough" with no preprocessed/compiled dictionary and is
+*easily* parallelized (just segment your file into N threads chunks with, e.g.
+`cligen/mslice.nSplit` & handle each, not unlike `adix/tests/wf.nim`).  There
+are also other notions in `cligen/textUt.distDamerau` and `hldiff/edits`.
+
+# More Detailed Analysis:
+
 This is a from-scratch implementation in Nim of Wolf Garbe's Symmetric Delete
 Algorithm for correct spelling suggestions.  The basic idea is simple: corpus
 words within edit distance N of a query can only be *at most* N units longer or
