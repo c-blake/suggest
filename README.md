@@ -138,7 +138,9 @@ it's 4.3cyc+4.2 cyc/byte, but also not quite as randomizing.)  I tried hard to
 have SymSpell be cast in the best light possible here, and that meant using the
 best hash.  Similarly, I did not try to implement the prefix optimization that
 https://github.com/wolfgarbe/symspell discusses which slows things down a little
-at some significant memory savings.
+at some significant memory savings. { In the years since I first wrote this, the
+default Nim hash has been updated to a faster, higher output entropy 32-bit
+murmur hash. }
 
 The memory allocator problem comes from a long-tailed distribution of how many
 "correct suggestions" any given typo has.  The distribution shape defeats most
@@ -165,51 +167,54 @@ It also bears mentioning that table building time is still costly in this fairly
 optimized implementation.  When using a Linux tmpfs RAM filesystem the resource
 usage looks like this:
 ```
-maxDist dt(sec) size(bytes) Misspells
-   1      0.182  19,456,529    647786
-   2      0.957  76,853,412   2562636
-   3      3.203 175,542,825   6852017
-   4      8.127 364,447,609  13981420
-   5     17.034 694,357,352  23487763
+maxDist dt(sec) size(bytes) Misspells  dt(sec)Presized
+   1      0.182  19,456,529    647786   0.141
+   2      0.957  76,853,412   2562636   0.710
+   3      3.203 175,542,825   6852017   2.589
+   4      8.127 364,447,609  13981420   6.654
+   5     17.034 694,357,352  23487763  13.891
 ```
-Those times could be sped up 1.2-1.3x by clairvoyantly pre-sizing the table to
+The final column is for when the table is clairvoyantly pre-sized perfectly to
 avoid hash table resizes.  Some reasonably precise formula for the number of
 delete misspellings for a given (corpus, distance) might be able to provide this
 modest speed-up systematically.  It is also unlikely that "less persistent"
 implementations can achieve much better build times.
-```
-maxDist dt(sec) size(bytes) Misspells
-   1      0.141  19,456,529    647786
-   2      0.710  76,853,412   2562636
-   3      2.589 175,542,825   6852017
-   4      6.654 364,447,609  13981420
-   5     13.891 694,357,352  23487763
-```
-Also Garbe claims significant space reduction for modest slow downs which should
-also help build times.  The main take-away though, is just making concrete my
-"long time and a lot of space" from the introductory paragraphs.  This puts real
-pressure on saving the answer of this build, especially for larger dictionaries
-with longer words.  One really does need thousands of future queries before the
-investment in build time pays off in query performance.  This natural "save the
-answer" response then begs the question of cold-cache performance.
 
-## Hot vs. Cold Cache; aka Average vs Worst Case
+Garbe claims significant space reduction for modest slow downs which might also
+help build times.  About a 10x space reduction seems available using ideas from
+Karch, Luxen, & Sanders 2008 (https://arxiv.org/abs/1008.1191v2) following the
+work of Bocek, Hunt, & Stiller 2007 (https://fastss.csg.uzh.ch/ifi-2007.02.pdf).
 
-The corpus file alone is a mere 752,702 bytes and can be scanned in hundreds of
-microseconds off a modern NVMe storage *fully cold-cache*.  Cold-cache, non-RAM
-FS times for SymSpell, meanwhile degrade dramatically, especially on high
-latency storage like Winchester drives.  Every corrections query involves at
-least one, but sometimes hundreds or even in rarer cases thousands of random
-accesses to the `.tabl` file for weakly related keys.  Arranging for locality
-to such accesses seems challenging if not impossible.
+The main take-away though, is just making concrete my "long time and a lot of
+space" from the introductory paragraphs.  This puts real pressure on saving the
+answer of this build, especially for larger dictionaries with longer words.  One
+really does need thousands of future queries before the investment in build time
+pays off in query performance.  This natural "save the answer on disk" response
+to slow builds begs the question of cold-cache performance (say after a reboot),
+though folks familiar with systems under load might have lept to it.
+
+## Hot vs. Cold Cache; aka Average vs Worst-ish Case
+
+To clarify the sense of "coldness" here, I mean only worst case run-times for
+queries on efficiently constructed tables.  The "complexity theory" worst case
+(with, e.g., an attack on the hash) is so slow as to invalidate the entire table
+approach if it a real concern.
+
+For a linear scan of just the corpus file, it is only 752,702 bytes and can be
+scanned in 100..400 microseconds on modern NVMe storage *fully cold-cache*.
+Cold-cache times for SymSpell, meanwhile, are bound by latency not throughput.
+So they degrade dramatically on high latency storage like Winchester drives.
+Every corrections query involves at least one, but sometimes hundreds or even in
+rarer cases thousands of random accesses to the `.tabl` file for weakly related
+keys.  Arranging for locality to such accesses is challenging if not impossible.
 
 For example, Cold-cache scanning on a 10 ms + 1e-5 ms/MB (aka 10 ms, 100 MB/s)
-Winchester drive or network storage unit would probably be approximately
-10 + 1e-5\*750e3 or about 17.5 ms, generally half the time of a single frame
-of a typical video file.  Getting suggestions for multiple words can easily
-share that IO as well, making amortized per-word time for batch-of-6-typos more
-like 3 ms.  Meanwhile, just one cold-cache SymSpell query on freshly opened data
-files could take 100s of random accesses or seconds (at 10 ms latency).
+Winchester drive or network storage unit would be approximately 10 + 1e-5\*750e3
+or about 17.5 ms - not great but under 100X slower than a fast NVMe time.
+Getting suggestions for multiple words can easily share that IO as well, making
+amortized per-word time for batch-of-6-typos more like 3 ms.  Meanwhile, just
+one cold-cache SymSpell query on freshly opened data files could take 100s of
+random accesses or ***seconds*** (at 10 ms latencies).
 
 We can measure this cost directly via `getrusage` instrumentation to measure
 minor page faults.  `suggest iquery` does this.  In a cold cache scenario,
@@ -219,36 +224,36 @@ graph](https://raw.githubusercontent.com/c-blake/suggest/master/randAcc.png)
 We see that for the fairly relevant d=3, 5% of the time there are 200+ accesses
 and 1% of the time there are 373 accesses which translate to 2..4 seconds at 10
 ms / access, 100..200x the 17.5 ms of a cold-cache linear scan.  Running this
-measurment against an actual 10 ms-slow device would be quite slow.  This 10,000
+measurement against an actual 10 ms-slow device would be quite slow.  This 10,000
 sample case did 2870453 faults, which would be 287045 seconds which is 80 hours.
 Even a 1000 sample case would take a good fraction of a day.
 
 While multiple words in a linear scan share IO perfectly, this is not the case
 for the random access pattern of SymSpell IO.  For the first batch of 6 off a
-cold cache, a very noticable fraction of a minute is conceivable for SymSpell
-and not very conceivable for a linear scan.  Indeed, if multiple words are
-expected, the wisest SymSpell IO strategy would be to get the whole data set
-paged into RAM via streaming IO (only 1.75 sec for the d=3 case @100 MB/s) and
-then run the queries.
+cold cache, a ***fraction of a minute*** is conceivable for SymSpell and not
+very conceivable for a linear scan.  Indeed, if multiple words are expected, the
+wisest SymSpell IO strategy is to get all the data paged into RAM via streaming
+IO (only 1.75 sec for the d=3 case @100 MB/s) before running queries.
 
 This cold-cache scenario is yet another "system layer performance fragility" of
 SymSpell.  Notice that linear scan's order 10s of ms cold-cache can now be 100x
 faster than SymSpell's seconds.  Indeed the probability is order 50% that the
 first typo query will be 25x slower or worse than a linear scan as well as this
-time being in an end-user noticable regime.  Faster storage than 10 ms + 1e-5
+time being in end-user noticeable regimes.  Faster storage than 10 ms + 1e-5
 ms/MB storage like SSDs and NVMe is more common these days, but even so..to keep
-SymSpell a performance winner in deployment, one wants to ensure cached pages.
+SymSpell a performance winner in deployment, one must ensure cached pages.
 
 Of course, the above commentary also applies to *non-persistent* SymSpell
 implementations in execution environments where swap/page files are possible.
-Competition for memory may be beyond a developers control, and pre-paging
-non-persistent data can be more involved than "cat spell.\* > /dev/null".
-Also, SymSpell's large memory requirements make it likely one of the fiercer
-memory competitors.  There are of course system facilities to help with this
-problem such as `mlock` and `MAP_LOCKED` and such (also a bit easier to use
-with persistent files than volatile "language runtime" data structures), if
-the developer thinks to use them. [ They may also require `CAP_IPC_LOCK` or
-superuser priviliges. ]
+Competition for memory is usually beyond the control of the authors of any
+single components.  Pre-paging non-persistent data can be more involved than
+"cat spell.\* > /dev/null" as in a persistent variant.  SymSpell's large memory
+requirements make it likely one of the fiercer memory competitors.
+
+There are of course system facilities to help with this problem such as `mlock`
+and `MAP_LOCKED` and such (also a bit easier to use with persistent files than
+volatile "language runtime" data structures), if the developer even thinks to
+use them. [ They may also require `CAP_IPC_LOCK` or superuser privileges. ]
 
 ## Conclusion
 
