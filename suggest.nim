@@ -1,22 +1,26 @@
 ## A from-scratch re-implementation of Wolf Garbe's Symmetric Delete Algorithm
-## for correct spelling suggestions.  The basic idea is simple: corpus words
-## within edit distance N of a query can only be *at most* N units longer or N
-## units shorter and the shorter must be derived from deletes of longer strings.
-## So, build a map from all shortenings to all corpus words which generate them.
-## When queried with a string, we can then lookup all possible edits lengthening
-## the query into a corpus word.  We also on-the-fly compute all shortenings of
-## a query (& shortenings of lengthenings).  From both sets, we filter "maybe
-## within N edits of a corpus word" to "actually within N edits".  The filter
-## can be any "distance" successfully bounded by N-indels.  This idea is like
-## Monte Carlo numerical integration of shapes within easy bounding boxes (but
-## this is deterministic & points which pass are reported, not just counted).
+## for correct spelling suggestions.  It is identical, in essence, to Variation
+## 1 of Mor & Fraenkel 1982 "A Hash Code Method for Detecting and Correcting
+## Spelling Errors" (DOI 10.1145/358728.358752).
 ##
-## While this allows for fast queries, it takes takes a long time and much space
-## to make a lengthenings table.  So, it is a useful strategy if you A) can save
-## the big map to disk AND VERY efficiently load it AND/OR B) have MANY queries
-## to amortize build costs over.  Rebuilding is lame & "real" DB query latency
-## is hostile.  So, this module does an efficient external file format w/5 files
-## to mmap&go: A .tabl pointing to (keyIx->varlen.keys,.sugg=varlen[array[CNo]])
+## The basic idea is simple: corpus words within edit distance N of a query can
+## only be *at most* N units longer or N units shorter and the shorter must be
+## derived from deletes of longer strings.  So, build a map from all shortenings
+## to all corpus words which generate them.  When queried with a string, we can
+## then lookup all possible edits lengthening the query into a corpus word.  We
+## also on-the-fly compute all shortenings of a query (& shortenings of
+## lengthenings).  From both sets, we filter "maybe within N edits of a corpus
+## word" to "actually within N edits".  The filter can be any "distance"
+## successfully bounded by N-indels.  This idea is like Monte Carlo numerical
+## integration of shapes within easy bounding boxes (but this is deterministic &
+## points which pass are reported, not just counted).
+##
+## While this allows for fast queries, it takes costs much time & space to make
+## a lengthenings table.  So, it is a useful strategy if you A) can save the big
+## map to disk AND VERY efficiently load it AND/OR B) have MANY queries to
+## amortize build costs over.  Rebuilding is lame & "real" DB query latency is
+## hostile.  So, this module does an efficient external file format w/5 files to
+## mmap&go: A .tabl pointing to (keyIx->varlen.keys,.sugg=varlen[array[CNo]])
 ## and a .meta(ix,cnt) file pointing to varlen .corp.  varlen[arr[CNo]] is an
 ## allocation arena with early entries the heads of per-listSz free lists.
 
