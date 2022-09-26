@@ -340,11 +340,11 @@ proc open*(path: string, mode=fmRead, maxDist=3, size=256, refr=""): Suggestor =
   result.tabSz = tSlots result.tabf.size             #..inferred from file sizes
   result.suggs = cast[ptr Suggs](result.sugf.mem)
   result.sugSz = Ix(result.sugf.size div CNo.sizeof)
-  result.zKeys = if result.keyf.size==1: 0 else: result.keyf.size
+  result.zKeys = Ix(if result.keyf.size==1: 0 else: result.keyf.size)
   result.metas = cast[ptr Metas](result.metf.mem)
   result.nMeta = CNo(if result.metf.size==1: 0
                      else: result.metf.size div Meta.sizeof)
-  result.zCorp = if result.corf.size==1: 0 else: result.corf.size
+  result.zCorp = Ix(if result.corf.size==1: 0 else: result.corf.size)
 
 proc close*(s: var Suggestor, verb=false, small=false) =
   if verb: echo "size: ", s.tabf.size + s.sugSz.int * CNo.sizeof +
