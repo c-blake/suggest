@@ -26,6 +26,12 @@
 
 import std/[hashes,tables,sets,os,times,memfiles,strutils,algorithm,math,random]
 import system/ansi_c
+when declared(File):
+  template stdOpen(x: varargs[untyped]): untyped = system.open(x)
+else:
+  import std/[syncio, formatfloat]
+  template stdOpen(x: varargs[untyped]): untyped = syncio.open(x)
+
 #NOTE: You are NOT intended to understand levenshtein/optimStrAlign here
 #      without reading the Hyyro 2003 bit-vector algorithm paper.
 type
@@ -600,13 +606,13 @@ proc makeTypos(path: string, size=6, n=10, deletes=1, outPrefix="typos.") =
   ## ``compare``. Sample via w,frq in ``path`` &do ``deletes`` dels.
   var words: seq[string]
   var tot = 0.0; var cdf: seq[float]
-  for line in system.open(path).lines:
+  for line in stdOpen(path).lines:
     let cols = line.split
     words.add cols[0]
     tot += (if cols.len == 2: cols[1].parseFloat else: 1.0)
     cdf.add tot
   for i in 0 ..< n:
-    let o = system.open(outPrefix & $i, fmWrite)
+    let o = stdOpen(outPrefix & $i, fmWrite)
     var z = 0
     while z < size:
       var typo = words.sample cdf
@@ -628,7 +634,7 @@ proc compare*(prefix: string, dir: string, refr="",
   ## A benchmarking call that works with makeTypos and test-suggest.sh.
   for pkind, path in dir.walkDir:
     var typos: seq[string]
-    for line in system.open(path).lines:
+    for line in stdOpen(path).lines:
       typos.add line
     var t0 = epochTime()
     var s = suggest.open(prefix, size = -1, refr=refr)
