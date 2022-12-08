@@ -1,5 +1,5 @@
 # Package
-version     = "1.1"
+version     = "1.2"
 author      = "Charles Blake"
 description = "mmap-persistent SymSpell spell checking algorithm"
 license     = "MIT/ISC"
