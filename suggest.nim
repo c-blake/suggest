@@ -619,7 +619,8 @@ proc makeTypos(path: string, size=6, n=10, deletes=1, outPrefix="typos.") =
       if typo.len <= deletes: continue    #Need strings > ``deletes`` long
       for d in 0 ..< deletes:
         let k = rand(typo.len - 1)
-        typo.delete(k, k)
+        when (NimMajor,NimMinor) >= (1,6): typo.delete(k..k)
+        else: typo.delete(k, k)
       o.write typo, "\n"
       inc z
     o.close
