@@ -239,10 +239,12 @@ proc addKey*(s: var Suggestor, mim1: int, w: Word, c: bool): int =
   return i
 
 #ALLOCATION ARENA FOR PERSISTENT SUGGESTION LISTS
+{.push hint[LineTooLong]:off .}
 const  sizes = [ 0, 1,    2,    3,   4,   5,   6,   7,   8,   9,   10,  11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 40, 48, 56, 64, 85, 102, 113, 128, 146, 170, 204, 256, 341, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65535 ]
 #const grows = [ 0, 1024, 1024, 682, 512, 409, 341, 292, 128, 113, 102, 92, 85, 78, 73, 68, 64, 60, 56, 53, 51, 48, 46, 44, 42, 40, 39, 37, 36, 35, 34, 33, 32, 25, 21, 18, 16, 12, 10,  9,   8,   7,   6,   5,   4,   3,   2,   1,    1,    1,    1,    1,     1,     1     ]
 #Below is needed for 70%-ish utilization on the .sugg file. Could ditch grows[]
 const  grows = [ 0, 1,    1,    1,   1,   1,   1,   1,   1,   1,   1,   1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,   1,   1,   1,   1,   1,   1,   1,   1,   1,    1,    1,    1,    1,     1,     1     ]
+{.pop.}
 
 proc growArea*(s: var Suggestor, head: uint16) =
   let n = Ix(grows[head] * sizes[head])         #How much to grow by; CNo units
