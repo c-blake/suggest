@@ -1,9 +1,9 @@
 # Package
-version     = "1.2"
+version     = "1.3"
 author      = "Charles Blake"
 description = "mmap-persistent SymSpell spell checking algorithm"
 license     = "MIT/ISC"
 
 # Deps
-requires "nim >= 0.19.2", "cligen >= 0.9.34"
+requires "nim >= 1.2.0", "cligen >= 1.5.37"
 skipDirs = @["data"]
