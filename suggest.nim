@@ -219,6 +219,7 @@ proc growTab*(s: var Suggestor, w: Word): int =
     let j = if J < 0: -J - 1 else: J            #Can falsePos for "" in NEW tab
     copyMem te(j).addr, te(i).addr, szTabEnt    #but cpOver of old non-empty wks
   s.tabf.resize tBytes(s.tabSz)                     #Now shrink file & memory
+  s.table = cast[ptr SuggTab](s.tabf.mem)
   return -s.find(w) - 1                   #Return insertion spot in grown table
 
 proc rightSize*(count: Natural): int {.inline.} =
