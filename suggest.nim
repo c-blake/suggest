@@ -340,7 +340,6 @@ proc open*(path: string, mode=fmRead, maxDist=3, size=256, refr=""): Suggestor =
     result.tabf = mfop(tablPath, fmReadWrite, -1, 0, tBytes sz, true)
     cast[ptr SuggTab](result.tabf.mem).maxDist = maxDist.uint8
     result.keyf = mfop(keysPath, fmReadWrite, -1, 0, 1, true)
-    result.keyf = mfop(keysPath, fmReadWrite, -1, 0, 1, true)
     result.sugf = mfop(suggPath, fmReadWrite, -1, 0, sizes.len*Ix.sizeof, true)
     result.metf = mfop(metaPath, fmReadWrite, -1, 0, 1, true)
     result.corf = mfop(corpPath, fmReadWrite, -1, 0, 1, true)
