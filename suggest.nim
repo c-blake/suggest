@@ -670,7 +670,7 @@ when defined Windows:
     stderr.write "iquery not implemented for Windows"
     return 1  #PR welcome someone wants to impl/test GetProcessMemoryInfo
 else:
-  import posix
+  import std/posix
   proc iquery*(prefix: string, typos: seq[string], refr="",
                dmax=2, kind=osa, matches=6): int =
     ## Like `query` but per-typo open, close, and page fault instrumented.
