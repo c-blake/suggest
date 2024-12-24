@@ -23,7 +23,7 @@
 ## mmap&go: A .tabl pointing to (keyIx->varlen.keys,.sugg=varlen[array[CNo]])
 ## and a .meta(ix,cnt) file pointing to varlen .corp.  varlen[arr[CNo]] is an
 ## allocation arena with early entries the heads of per-listSz free lists.
-
+{.warning[Uninit]:off, warning[ProveInit]:off.} # Should be verbosity:2, not 1
 import std/[hashes,tables,sets,os,times,memfiles,strutils,algorithm,math,random]
 import system/ansi_c
 when declared(File):
