@@ -27,10 +27,11 @@ echo maybe() # @["sludge", "slide", ..]
 ```
 In light of subsequent analysis, you may also just want to `import suggest`,
 scan a dictionary "however" & use `myersCompile, levenshtein|optimStrAlign`.
-That is likely "fast enough" with no preprocessed/compiled dictionary and is
-*easily* parallelized (just segment your file into N threads chunks with, e.g.
-`cligen/mslice.nSplit` & handle each, not unlike `adix/tests/wf.nim`).  There
-are also other notions in `cligen/textUt.distDamerau` and `hldiff/edits`.
+That is likely "fast enough" with a dictionary no more preprocessed than being
+sorted by use frequency and is *easily* parallelized with perfect linear scale
+up (just segment your file into N chunks with, e.g. `cligen/mslice.nSplit` &
+handle each, not unlike `adix/tests/wf.nim`).  There are also other notions in
+`cligen/textUt.distDamerau` and `hldiff/edits`.
 
 # More Detailed Analysis:
 
@@ -84,11 +85,15 @@ particular, SymSpell offers only modest speed-up vs-linear scan at large
 plot.](https://raw.githubusercontent.com/c-blake/suggest/master/scanVsymspellD5.png)
 This does roughly contradict Garbe's "large distance, large dictionary" sales
 pitch.  False positive rates for d>3 probably makes that regime less interesting
-in natural language settings.  Still, SymSpell benefit remains ***only 7.3x-ish
-for 80 kWord @d=3*** which is not great.  Indeed, **parallel** storage &
-processing optimizations on both linear scan and SymSpell querying **might even
-nullify** such a small advantage (the linear case has easily ensured work
-independence while SymSpell has plausibly high L3 cache competition.)
+in natural language settings.
+
+Still, SymSpell benefit remains ***only 7.3x-ish for 80 kWord @d=3*** which is
+not great.  Indeed, **>8X parallel** storage & processing optimizations
+available today applied to both linear scan and SymSpell querying would *very
+likely* make the **linear scan strongly beat SymSpell**.  It is easy to see why.
+The linear case has easily ensured work independence while SymSpell has
+plausibly very high L3 cache competition (since the misspelling dictionaries are
+*so* much larger than typical L3s for even d=1).
 
 ## Experimental Set Up and Basics
 
@@ -257,14 +262,15 @@ use them. [ They may also require `CAP_IPC_LOCK` or superuser privileges. ]
 
 ## Conclusion
 
-The TL;DR?  While a well-implemented SymSpell with a well guarded deployment
-environment can indeed be always faster *on average* than a similarly well done
-linear scan, it is far more "performance risky" without a variety of cautions.
-It may be 10-100x faster than a linear scan in some hot cache circumstances or
-10-100x slower in cold-cache/worst case circumstances.  Meanwhile, a cold-cache
-linear scan might be only about 20x worse than a hot-cache linear scan while for
-SymSpell cold vs hot could be 10000x different.  In those terms, SymSpell is
-500x more performance risky than a linear scan, not even considering things like
-allocator and hash function implementation risk and parallelization.
+The TL;DR?  A well-implemented SymSpell with a strong deployment environment
+*can* be always faster *on average* than a similarly well done *single core*
+linear scan, BUT it is far more "performance risky" without a variety of
+cautions.  It may be 10-100x faster than a linear scan in some hot cache
+circumstances or 10-100x slower in cold-cache/worst case circumstances.
+Meanwhile, a cold-cache linear scan might be only about 20x worse than a
+hot-cache linear scan while for SymSpell cold vs hot could be 10000x different.
+In those terms, SymSpell is 500x more performance risky than a linear scan, not
+even considering things like allocators, hash function implementation risk, and
+parallelization.
 
 The TL;DR;DR?  "YMMV from hell".  ;-)
