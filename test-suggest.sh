@@ -32,7 +32,7 @@ tmpfs for me, but any FS will do) and 'suggest cpHuge' data files to \$ht
 (GNU 'cp' fails for hugetlbfs) and use 'suggest -r' to let 'suggest' know
 true file sizes.  \$HUGESAVE=1 also skips a final \$ht purge.
 EOF
-    exit
+  exit
 fi
 
 set -e
@@ -53,16 +53,15 @@ for z; do
     suggest makeTypos -d "$d" -s "$b" -p freqs -o typos/ -n2001 &
     wait
     if [ "x$HUGETLB" = x ]; then
-        suggest compare -pp --dmax="$qd" -m "$qm" -d typos > both
+      suggest compare -pp --dmax="$qd" -m "$qm" -d typos > both
     else
+      rm -f "$ht/p.corp" "$ht/p.keys" "$ht/p.meta" "$ht/p.sugg" "$ht/p.tabl"
+      for f in p.corp p.keys p.meta p.sugg p.tabl; do
+        suggest cpHuge "$f" "$ht/$f"    # GNU cp fails for hugetlbfs!
+      done
+      suggest compare -p "$ht/p" -r p --dmax="$qd" -m "$qm" -d typos > both
+      [ "x$HUGESAVE" = x ] &&
         rm -f "$ht/p.corp" "$ht/p.keys" "$ht/p.meta" "$ht/p.sugg" "$ht/p.tabl"
-        for f in p.corp p.keys p.meta p.sugg p.tabl; do
-            suggest cpHuge "$f" "$ht/$f"   #GNU cp fails for hugetlbfs!
-        done
-        suggest compare -p "$ht/p" -r p --dmax="$qd" -m "$qm" -d typos > both
-        if [ "x$HUGESAVE" = x ]; then
-          rm -f "$ht/p.corp" "$ht/p.keys" "$ht/p.meta" "$ht/p.sugg" "$ht/p.tabl"
-        fi
     fi
     awk '{print $2}' < both > Via-scan
     awk '{print $4}' < both > Via-qry
