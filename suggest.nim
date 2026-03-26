@@ -566,27 +566,29 @@ proc query*(prefix: string, typos: seq[string], refr="",
   echo formatFloat(dtAll/typos.len.float, ffDecimal, 4), " ms"
   s.close
 
+iterator corpWords(corp: ucArrCh, bytes: int): (int, ptr char, int) =
+  var off, ix: int = 0
+  while off < bytes:
+    yield (ix, corp[off + 1].addr, corp[off].int)
+    off += corp[off].int + 1                          # First byte is .n
+    inc ix
+
 proc suggsScan*(s: Suggestor, typos: seq[string], maxDist: int=3, kind=osa,
                 matches=6): seq[seq[string]] =
   let corp = cast[ucArrCh](s.corf.mem)
-  var sg = newSeq[Results](typos.len)
   var ps = newSeq[MyersPattern[int]](typos.len)
+  var sg = newSeq[Results](typos.len)
   var dmaxE = newSeq[int](typos.len)
   for i in 0 ..< typos.len:
     ps[i] = myersCompile(typos[i], 0)
     sg[i].setLen maxDist + 1
     dmaxE[i] = maxDist
-  var off = 0
-  var j = 0
-  while off < s.corf.size:
-    var n = corp[off].int                             #First byte is .n
+  for (cwIx, cwPtr, cwLen) in corpWords(corp, s.corf.size):
     for i in 0 ..< typos.len:
-      let d = ps[i].distance(corp[off + 1].addr, n, dmaxE[i] + 1, kind)
-      if d < dmaxE[i] + 1:
-        sg[i][d].add j.CNo
+      let d = ps[i].distance(cwPtr, cwLen, dmaxE[i] + 1, kind)
+      if d < dmaxE[i] + 1:      #NOTE: if sg[i][0].len == matches: break Wd
+        sg[i][d].add cwIx.CNo   #   .. w/rev.loop.ord & `block W:` is slower.
         dmaxE[i].rup sg[i], d, matches
-    off += n + 1                                      #First byte is .n
-    inc j
   for sug in sg:
     result.add s.render(sug, matches)
 
