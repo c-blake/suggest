@@ -554,7 +554,7 @@ proc query*(prefix: string, typos: seq[string], refr="",
     let df = s.nFind - f0 ; dp0 += df
     let dd = totDists - d0; dd0 += dd
     dtAll += dt
-    stdout.write "  sugg for \"", typos[i], "\""
+    stdout.write "  sugg for \"", typos[i], "\"(",$sugg.len,")"
     if verbose:
       stdout.write " in ", formatFloat(dt, ffDecimal, 4), " ms ",
                    df, " s.nFind ", dd, " dists"
@@ -599,7 +599,7 @@ proc scan*(prefix: string, typos: seq[string], refr="",
   var s = suggest.open(prefix, size = -1, refr=refr)  #Only var so can close
   let sg = s.suggsScan(typos, dmax, kind, matches)
   for i, ty in typos:
-    stdout.write "  sugg for \"", ty, "\""
+    stdout.write "  sugg for \"", ty, "\"(",$sg[i].len,")"
     if sg[i].len > 0: stdout.write ":  ", sg[i].join(" ")
     echo ""
   echo formatFloat((epochTime() - t0)*1e3/typos.len.float, ffDecimal, 4), " ms"
