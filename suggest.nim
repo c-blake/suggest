@@ -566,7 +566,7 @@ proc query*(prefix: string, typos: seq[string], refr="",
   echo formatFloat(dtAll/typos.len.float, ffDecimal, 4), " ms"
   s.close
 
-iterator corpWords(corp: ucArrCh, bytes: int): (int, ptr char, int) =
+iterator corpWords*(corp: ucArrCh, bytes: int): (int, ptr char, int) =
   var off, ix: int = 0
   while off < bytes:
     yield (ix, corp[off + 1].addr, corp[off].int)
