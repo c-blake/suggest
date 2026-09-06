@@ -4,10 +4,9 @@
 ## the paper.  This version also works off a [0]=nil file-friendly Node pool.
 import std/[tables, sugar, algorithm]
 type Node* = object             # 20B TernST Node: no GC hdr, no malloc/node.
-  c*: char # (Can fit in 16B w/29bit-field ptrs; Likely slower & smaller alphab)
+  c*,p1,p2,p3: char # (Can fit in 16B w/29bit-field ptrs; Slower&smaller alphab)
   v*: float32   ## Here used for freq; Called 'v' since can be any user value!=0
   l*, m*, r*: uint32            # Could pretty easily become a `nio.FileArray`
-
 type Nodes* = seq[Node]         # E.g., `.N4cf3i` w/`suggest.nim`-like usage.
 # Node pool only speeds-up ~10% {bad speculation/branch misses are main costs}.
 
