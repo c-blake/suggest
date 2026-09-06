@@ -4,9 +4,8 @@
 ## the paper.  This version also works off a [0]=nil file-friendly Node pool.
 import std/[tables, sugar, algorithm]
 type Node* = object             # 20B TernST Node: no GC hdr, no malloc/node.
-  c*: char
-  hasVal*: bool
-  v*: float32 ## Used for freq here, but called 'v' since can be any user value
+  c*: char # (Can fit in 16B w/29bit-field ptrs; Likely slower & smaller alphab)
+  v*: float32   ## Here used for freq; Called 'v' since can be any user value!=0
   l*, m*, r*: uint32            # Could pretty easily become a `nio.FileArray`
 
 type Nodes* = seq[Node]         # E.g., `.N4cf3i` w/`suggest.nim`-like usage.
@@ -16,11 +15,11 @@ proc add*(ns: var Nodes; n:uint32; s:cstring; len,o: int; v:float32): uint32 =
   if n == 0:  # [n].c == => `<`, `>` surely fail => Skip & inline rest here
     let n = ns.len.uint32; ns.add Node(c: s[o])     # How we alloc a Node
     if o+1 < len: ns[n].m = add(ns,0, s, len, o+1, v); result = n
-    else        : ns[n].v = v; ns[n].hasVal = true   ; result = n
+    else        : ns[n].v = v                        ; result = n
   elif s[o] < ns[n].c: ns[n].l = add(ns,ns[n].l, s, len, o  , v); result = n
   elif s[o] > ns[n].c: ns[n].r = add(ns,ns[n].r, s, len, o  , v); result = n
   elif o+1 < len     : ns[n].m = add(ns,ns[n].m, s, len, o+1, v); result = n
-  else: ns[n].v = v; ns[n].hasVal = true; result = n #Paper bug: Above=~ n.r.add
+  else: ns[n].v = v; result = n       # Paper bug in Above line; =~ n.r.add
 
 type Res* = Table[string, (int, float32)] # Results; TODO? Small `matches`=>seq
 
@@ -41,7 +40,7 @@ proc near*(r: var Res, ns: Nodes, n: uint32, s: string, t: int; v=0f32, o=0,
     if w or s[o] > b.c: r.near ns,b.r, s, t, 0, o, false, w, true, e, dMx
     if w or s[o] == b.c:
       e.add b.c
-      r.near ns,b.m, s, t, ns[n].v, o+int(not w), b.hasVal, false, false, e, dMx
+      r.near ns,b.m, s, t, ns[n].v, o+int(not w), b.v != 0, false, false, e, dMx
       e.setLen e.len - 1
   if not d and t >= 1 and not w: # May edit; Paper bug `¬c` fixed to `¬d`
     if n != 0   : r.near ns,n, s, t-1, 0, o  , false, true, false, e, dMx # Ins
@@ -75,7 +74,7 @@ when isMainModule:
       for d in 1..dMx:
         e.setLen 0; r.near(ns,t, typo, d, e=e)
         if matches > 0 and r.len >= matches: break
-      if verb>0: echo typo, " (", r.len, "): ",(if verb>1: $r else: "")
+      if verb > 0: echo typo," (",r.len,"): ",(if verb > 1: $r else: "")
     let t2 = epochTime(); template ff3(v): untyped = formatFloat(v,ffDecimal,3)
     if verb==0: stderr.write "nodes: ",ns.len-1," bytes: ",ns.len*Node.sizeof,
                       " build/file: ",ff3(1e3*(t1 - t0)                )," ms",
