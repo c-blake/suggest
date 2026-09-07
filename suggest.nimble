@@ -6,5 +6,5 @@ license     = "MIT/ISC"
 bin         = @["suggest", "tspell"]
 
 # Deps
-requires "nim >= 1.2.0", "cligen >= 1.10.0"
+requires "nim >= 1.2.0", "cligen >= 1.10.0", "nio >= 0.7.12"
 skipDirs = @["data"]
