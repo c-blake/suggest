@@ -1,7 +1,7 @@
 # Package
-version     = "1.4.6"
+version     = "2.0.0"
 author      = "Charles Blake"
-description = "mmap-persistent SymSpell spell checking algorithm"
+description = "mmap-persistent spell checking algorithms"
 license     = "MIT/ISC"
 bin         = @["suggest", "tspell"]
 
