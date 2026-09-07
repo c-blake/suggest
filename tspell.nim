@@ -2,21 +2,21 @@
 ## a Scale using Ternary Search Trees and Implicit Levenshtein Automata", ICSOFT
 ## 2022, pp.657-662.  Fixes 1 NASTY bug, 2 obvious bugs & 2 major omissions from
 ## the paper.  This version also works off a [0]=nil file-friendly Node pool.
-import std/[tables, sugar, algorithm]
+import std/[tables, sugar, algorithm], nio
 type Node* = object     ## 20B TernST Node: no GC hdr, no malloc/node.
   c*,d,e,f: char ## Byte,Pads; 29bit link ptrs could do 16B;Slower&smaller alph
   v*: float32   ## Here used for freq; Called 'v' since can be any user value!=0
   l*, m*, r*: uint32 ## 3 links in ternary search tree
-type Nodes* = seq[Node] ## Pool ~10% faster; Main cost=bad specul/branch.
+type Nodes* = FileArray[Node] ## Pool ~10% faster; Main cost=bad specul/branch.
 
 proc add*(ns: var Nodes; n:uint32; s:cstring; len,o: int; v:float32): uint32 =
   if n == 0:  # [n].c == => `<`, `>` surely fail => Skip & inline rest here
-    let n = ns.len.uint32; ns.add Node(c: s[o])     # How we alloc a Node
-    if o+1 < len: ns[n].m = ns.add(0, s, len, o+1, v); result = n
+    let n = ns.used.uint32; ns.add Node(c: s[o])    # How we alloc a Node
+    if o+1 < len: ns[n,m] = ns.add(0, s, len, o+1, v); result = n
     else        : ns[n].v = v                        ; result = n
-  elif s[o] < ns[n].c: ns[n].l = ns.add(ns[n].l, s, len, o  , v); result = n
-  elif s[o] > ns[n].c: ns[n].r = ns.add(ns[n].r, s, len, o  , v); result = n
-  elif o+1 < len     : ns[n].m = ns.add(ns[n].m, s, len, o+1, v); result = n
+  elif s[o] < ns[n].c: ns[n,l] = ns.add(ns[n].l, s, len, o  , v); result = n
+  elif s[o] > ns[n].c: ns[n,r] = ns.add(ns[n].r, s, len, o  , v); result = n
+  elif o+1 < len     : ns[n,m] = ns.add(ns[n].m, s, len, o+1, v); result = n
   else: ns[n].v = v; result = n       # Paper bug in Above line; =~ n.r.add
 
 type Res* = Table[string, (int, float32)] # Results; TODO? Small `matches`=>seq
@@ -58,13 +58,18 @@ when isMainModule:
       var ws: seq[string]
       for (_,_,w) in r.ord: (if ws.len == matches: break else: ws.add w)
       ws.join " "
-    var ns = newSeqOfCap[Node](z)     # ix 0 reserved=nil sentinel; Real[] >=1
-    var t = 0u32                      # root ix (0 = empty tree)
-    let t0 = epochTime() # Building is 20ms affair; Could save via mmap-alloc
-    for (cs, n) in freqs.getDelims:   # Simple input format w/exactly 1-space
-      let p = memchr(cs, ' ', n); if p.isNil: quit "Non 2-col fmt `freqs`", 1
-      let m = p -! cs
-      t = ns.add(t, cs, m,0, MSlice(mem: p+!1, len: n-m-1).parseFloat.float32)
+    var ns: FileArray[Node]; var t=0u32 # t=Root Ix (0=empty tree)
+    let t0 = epochTime()  # Set `ns` & `t` either from prior run or parse+add.
+    if ".N" in freqs: ns = freqs.load; t = ns[0].l # Take existing as complete
+    else: # Parse some text file into a binary "TST database" for future use.
+      ns = nOpen(freqs&".N4cf3i", fmWrite,  Node.sizeof*z, true).initFileArray
+      zeroMem ns.nf.m.mem, ns.nf.m.size # Only needed if file existed
+      ns.add Node()                     # Allocate a slot for "nil" pointer
+      for (cs, n) in freqs.getDelims:   # Simple input format w/exactly 1-space
+        let p = memchr(cs, ' ', n); if p.isNil: quit "Non 2-col fmt `freqs`", 1
+        let m = p -! cs
+        t = ns.add(t, cs, m,0, MSlice(mem: p+!1, len: n-m-1).parseFloat.float32)
+      ns[0].l = t; ns.setRoom ns.used
     let t1 = epochTime()
     var e = newString(64); var r: Res # Re-use hot memory from one typo to next
     for typo in typos:
