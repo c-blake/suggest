@@ -3,21 +3,20 @@
 ## 2022, pp.657-662.  Fixes 1 NASTY bug, 2 obvious bugs & 2 major omissions from
 ## the paper.  This version also works off a [0]=nil file-friendly Node pool.
 import std/[tables, sugar, algorithm]
-type Node* = object             # 20B TernST Node: no GC hdr, no malloc/node.
-  c*,p1,p2,p3: char # (Can fit in 16B w/29bit-field ptrs; Slower&smaller alphab)
+type Node* = object     ## 20B TernST Node: no GC hdr, no malloc/node.
+  c*,d,e,f: char ## Byte,Pads; 29bit link ptrs could do 16B;Slower&smaller alph
   v*: float32   ## Here used for freq; Called 'v' since can be any user value!=0
-  l*, m*, r*: uint32            # Could pretty easily become a `nio.FileArray`
-type Nodes* = seq[Node]         # E.g., `.N4cf3i` w/`suggest.nim`-like usage.
-# Node pool only speeds-up ~10% {bad speculation/branch misses are main costs}.
+  l*, m*, r*: uint32 ## 3 links in ternary search tree
+type Nodes* = seq[Node] ## Pool ~10% faster; Main cost=bad specul/branch.
 
 proc add*(ns: var Nodes; n:uint32; s:cstring; len,o: int; v:float32): uint32 =
   if n == 0:  # [n].c == => `<`, `>` surely fail => Skip & inline rest here
     let n = ns.len.uint32; ns.add Node(c: s[o])     # How we alloc a Node
-    if o+1 < len: ns[n].m = add(ns,0, s, len, o+1, v); result = n
+    if o+1 < len: ns[n].m = ns.add(0, s, len, o+1, v); result = n
     else        : ns[n].v = v                        ; result = n
-  elif s[o] < ns[n].c: ns[n].l = add(ns,ns[n].l, s, len, o  , v); result = n
-  elif s[o] > ns[n].c: ns[n].r = add(ns,ns[n].r, s, len, o  , v); result = n
-  elif o+1 < len     : ns[n].m = add(ns,ns[n].m, s, len, o+1, v); result = n
+  elif s[o] < ns[n].c: ns[n].l = ns.add(ns[n].l, s, len, o  , v); result = n
+  elif s[o] > ns[n].c: ns[n].r = ns.add(ns[n].r, s, len, o  , v); result = n
+  elif o+1 < len     : ns[n].m = ns.add(ns[n].m, s, len, o+1, v); result = n
   else: ns[n].v = v; result = n       # Paper bug in Above line; =~ n.r.add
 
 type Res* = Table[string, (int, float32)] # Results; TODO? Small `matches`=>seq
@@ -55,17 +54,17 @@ when isMainModule:
   proc memchr(s:cstring, c:char, n:int): pointer {.importc, header:"string.h".}
   proc tspell(typos: seq[string], freqs: string, dMx=2, matches=5, verb=2) =
     ## `suggest`-like spell-check. `freqs` format: Word<SingleSpace>IntCount\\n.
-    var ns = newSeqOfCap[Node](204801) # ix 0 reserved=nil sentinel; Real[] >=1
-    var t = 0u32                       # root ix (0 = empty tree)
     proc `$`(r: Res): string =
       var ws: seq[string]
       for (_,_,w) in r.ord: (if ws.len == matches: break else: ws.add w)
       ws.join " "
+    var ns = newSeqOfCap[Node](204801) # ix 0 reserved=nil sentinel; Real[] >=1
+    var t = 0u32                       # root ix (0 = empty tree)
     let t0 = epochTime() # Building is 20ms affair; Could save via mmap-alloc
-    for (cs, n) in freqs.getDelims:   # Simple file format w/exactly 1-space
+    for (cs, n) in freqs.getDelims:   # Simple input format w/exactly 1-space
       let p = memchr(cs, ' ', n); if p.isNil: quit "Non 2-col fmt `freqs`", 1
       let m = p -! cs
-      t = add(ns,t, cs, m, 0, MSlice(mem: p+!1, len: n-m-1).parseFloat.float32)
+      t = ns.add(t, cs, m,0, MSlice(mem: p+!1, len: n-m-1).parseFloat.float32)
     let t1 = epochTime()
     var e = newString(64); var r: Res # Re-use hot memory from one typo to next
     for typo in typos:
