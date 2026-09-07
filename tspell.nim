@@ -52,14 +52,14 @@ proc ord*(r:Res):auto = result=collect(for w,v in r: (v[0],-v[1],w));result.sort
 when isMainModule:
   import std/[strutils, times, syncio], cligen, cligen/[mslice, osUt]
   proc memchr(s:cstring, c:char, n:int): pointer {.importc, header:"string.h".}
-  proc tspell(typos: seq[string], freqs: string, dMx=2, matches=5, verb=2) =
+  proc tspell(typos: seq[string], freqs: string, z=4, dMx=2, matches=5, verb=2)=
     ## `suggest`-like spell-check. `freqs` format: Word<SingleSpace>IntCount\\n.
     proc `$`(r: Res): string =
       var ws: seq[string]
       for (_,_,w) in r.ord: (if ws.len == matches: break else: ws.add w)
       ws.join " "
-    var ns = newSeqOfCap[Node](204801) # ix 0 reserved=nil sentinel; Real[] >=1
-    var t = 0u32                       # root ix (0 = empty tree)
+    var ns = newSeqOfCap[Node](z)     # ix 0 reserved=nil sentinel; Real[] >=1
+    var t = 0u32                      # root ix (0 = empty tree)
     let t0 = epochTime() # Building is 20ms affair; Could save via mmap-alloc
     for (cs, n) in freqs.getDelims:   # Simple input format w/exactly 1-space
       let p = memchr(cs, ' ', n); if p.isNil: quit "Non 2-col fmt `freqs`", 1
@@ -80,6 +80,6 @@ when isMainModule:
   include cligen/mergeCfgEnv
   dispatch tspell, help={ "typos": "list of words for which to gen suggestions",
     "freqs": "path to integer-weighted dictionary",
-    "dMx": "max allowed edit distance",
+    "z": "pre-siZe this many nodes", "dMx": "max allowed edit distance",
     "matches": "max suggestion count",
     "verb": "0:Just timing; 1:Just counts; 2:Full report"}
